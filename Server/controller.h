@@ -11,11 +11,23 @@ class AppController {
 private:
     AppService service;
 
+    string createNewUser(string rawRequest) {
+        CreateUserRequest request;
+        request.deserialize(rawRequest);
+        string message = service.createNewUser(request);
+        BaseResponse response(CODE_SUCCESS, message.c_str());
+        if (message == MESSAGE_SUCCESS) {
+            return response.serialize();
+        }
+        response.code = CODE_ERROR;
+        return response.serialize();
+    }
+
     string getUsersNotJoiningEvent(string rawRequest) {
-        UsersRequest request;
+        InviteUsersRequest request;
         request.deserialize(rawRequest);
         list<User*> users = service.getUsersNotJoiningEvent(request.eventId);
-        UsersResponse response(CODE_SUCCESS, MESSAGE_SUCCESS, users);
+        InviteUsersResponse response(CODE_SUCCESS, MESSAGE_SUCCESS, users);
         return response.serialize();
     }
 public:
@@ -25,9 +37,12 @@ public:
         if (!request.isAuthenticated()) {
             return BaseResponse(CODE_ERROR, MESSAGE_UNAUTHENTICATED).serialize();
         }
-        switch (request.requestType)
+        switch (request.operation)
         {
-        case REQUEST_TYPE_USERS_NOT_JOINING:
+        case OP_SIGN_UP:
+            return createNewUser(rawRequest);
+            break;
+        case OP_USERS_NOT_JOINING_EVENT:
             return getUsersNotJoiningEvent(rawRequest);
             break;
         default:

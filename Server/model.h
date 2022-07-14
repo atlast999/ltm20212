@@ -77,23 +77,22 @@ protected:
 
 class BaseRequest : public Serializable {
 public:
-    int requestType = 0;
+    int operation = -1;
     int token = 0;
     void deserialize(string raw) {
         Serializable::deserialize(raw);
         this->token = getByKey(KEY_TOKEN).GetInt();
-        this->requestType = getByKey(KEY_REQUEST_TYPE).GetInt();
+        this->operation = getByKey(KEY_OPERATION).GetInt();
     }
     bool isAuthenticated() {
-        return (this->requestType == REQUEST_TYPE_USER_SIGN_UP || this->token > 0);
+        return (this->operation == OP_SIGN_UP || this->token > 0);
     }
 };
 
 class BaseResponse : public Serializable {
-protected:
+public:
     int code;
     string message;
-public:
     BaseResponse(int code, const char * message){
         this->code = code;
         this->message = string(message);
@@ -110,31 +109,26 @@ class User : public Serializable {
 private:
     int id;
 	string name;
-	string credential;
 public:
 	User() : User(0, "") {}
-    User(int id, string name) : User(id, name, "") {}
-	User(int id, string name, string credential) {
+	User(int id, string name) {
         this->id = id;
 		this->name = name;
-		this->credential = credential;
 	}
 	void deserialize(string raw) {
 		Serializable::deserialize(raw);
         this->id = getByKey(KEY_ID).GetInt();
 		this->name = getByKey(KEY_NAME).GetString();
-		this->credential = getByKey(KEY_CREDENTIAL).GetString();
 	}
 	string serialize() {
 		Serializable::serialize();
         addInt(KEY_ID, this->id);
 		addString(KEY_NAME, this->name);
-		addString(KEY_CREDENTIAL, this->credential);
 		return stringify();
 	}
 };
 
-class UsersRequest : public BaseRequest {
+class InviteUsersRequest : public BaseRequest {
 public:
     int eventId;
     void deserialize(string raw) {
@@ -143,11 +137,11 @@ public:
     }
 };
 
-class UsersResponse : public BaseResponse {
+class InviteUsersResponse : public BaseResponse {
 private:
     list<User*> users;
 public:
-    UsersResponse(int code, const char * message, list<User*> &users) : BaseResponse(code, message) {
+    InviteUsersResponse(int code, const char * message, list<User*> &users) : BaseResponse(code, message) {
         this->users = users;
     }
     string serialize() {
@@ -158,5 +152,15 @@ public:
     }
 };
 
+class CreateUserRequest : public BaseRequest {
+public:
+    string name;
+    string credential;
+    void deserialize(string raw) {
+        BaseRequest::deserialize(raw);
+        this->name = getByKey(KEY_NAME).GetString();
+		this->credential = getByKey(KEY_CREDENTIAL).GetString();
+    }
+};
 
 #endif

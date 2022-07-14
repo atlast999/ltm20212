@@ -2,6 +2,7 @@
 #define SERVICE_H_
 
 #include "model.h"
+#include "constant.h"
 #include<vector>
 #include<string>
 
@@ -11,6 +12,15 @@ class AppService {
 private:
     //db connection instance
 public:
+
+    string createNewUser(CreateUserRequest &request) {
+        //check and insert into db
+        if (request.name == "hoan") {
+            return MESSAGE_NAME_INVALID;
+        }
+        return MESSAGE_SUCCESS;
+    }
+
     list<User*> getUsersNotJoiningEvent(int eventId) {
         list<User*> result;
 
