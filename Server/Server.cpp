@@ -11,7 +11,7 @@ using namespace std;
 int main(int argc, char const *argv[])
 {
 	AppController controller;
-	string raw = "{\"eventId\":1,\"requestType\":1,\"token\":1}";
+	string raw = "{\"name\":\"hoang\",\"credential\":\"password\",\"token\":1,\"operation\":0}";
 	string res = controller.handleRequest(raw);
 	cout << res << endl;
 	return 0;
