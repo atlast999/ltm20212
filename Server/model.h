@@ -84,6 +84,12 @@ public:
         this->token = getByKey(KEY_TOKEN).GetInt();
         this->operation = getByKey(KEY_OPERATION).GetInt();
     }
+	string serialize() {
+		Serializable::serialize();
+		addInt(KEY_OPERATION, this->operation);
+		addInt(KEY_TOKEN, this->token);
+		return stringify();
+	}
     bool isAuthenticated() {
         return (this->operation == OP_SIGN_UP || this->token > 0);
     }
@@ -93,6 +99,7 @@ class BaseResponse : public Serializable {
 public:
     int code;
     string message;
+	BaseResponse() {}
     BaseResponse(int code, const char * message){
         this->code = code;
         this->message = string(message);
@@ -102,6 +109,11 @@ public:
         addInt(KEY_CODE, this->code);
 		addString(KEY_MESSAGE, this->message);
 		return stringify();
+	}
+	void deserialize(string raw) {
+		Serializable::deserialize(raw);
+		this->code = getByKey(KEY_CODE).GetInt();
+		this->message = getByKey(KEY_MESSAGE).GetString();
 	}
 };
 
@@ -161,6 +173,12 @@ public:
         this->name = getByKey(KEY_NAME).GetString();
 		this->credential = getByKey(KEY_CREDENTIAL).GetString();
     }
+	string serialize() {
+		BaseRequest::serialize();
+		addString(KEY_NAME, this->name);
+		addString(KEY_CREDENTIAL, this->credential);
+		return stringify();
+	}
 };
 
 #endif
