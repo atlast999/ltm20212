@@ -10,9 +10,18 @@ using namespace std;
 
 int main(int argc, char const *argv[])
 {
+	//client
+	CreateUserRequest request;
+	request.operation = OP_SIGN_UP;
+	request.name = "name";
+	request.credential = "pass";
+	string rawRequest = request.serialize();
+
 	AppController controller;
-	string raw = "{\"name\":\"hoang\",\"credential\":\"password\",\"token\":1,\"operation\":0}";
-	string res = controller.handleRequest(raw);
-	cout << res << endl;
+	string res = controller.handleRequest(rawRequest);
+	BaseResponse response;
+	response.deserialize(res);
+	
+	cout << response.code << endl;
 	return 0;
 }
