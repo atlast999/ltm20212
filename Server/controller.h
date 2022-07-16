@@ -12,10 +12,23 @@ private:
     AppService service;
 
     string createNewUser(string rawRequest) {
-        CreateUserRequest request;
+        SignUpRequest request;
         request.deserialize(rawRequest);
         string message = service.createNewUser(request);
-        BaseResponse response(CODE_SUCCESS, message.c_str());
+        SignUpResponse response(CODE_SUCCESS, message.c_str());
+        if (message == MESSAGE_SUCCESS) {
+            return response.serialize();
+        }
+        response.code = CODE_ERROR;
+        return response.serialize();
+    }
+
+    string verifyUser(string rawRequest) {
+        LogInRequest request;
+        request.deserialize(rawRequest);
+        int token = -1;
+        string message = service.verifyUser(request, token);
+        LogInResponse response(CODE_SUCCESS, message.c_str(), token);
         if (message == MESSAGE_SUCCESS) {
             return response.serialize();
         }
@@ -41,6 +54,9 @@ public:
         {
         case OP_SIGN_UP:
             return createNewUser(rawRequest);
+            break;
+        case OP_LOG_IN:
+            return verifyUser(rawRequest);
             break;
         case OP_USERS_NOT_JOINING_EVENT:
             return getUsersNotJoiningEvent(rawRequest);

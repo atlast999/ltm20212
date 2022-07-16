@@ -91,7 +91,7 @@ public:
 		return stringify();
 	}
     bool isAuthenticated() {
-        return (this->operation == OP_SIGN_UP || this->token > 0);
+        return (this->operation == OP_SIGN_UP || this->operation == OP_LOG_IN || this->token > 0);
     }
 };
 
@@ -118,14 +118,16 @@ public:
 };
 
 class User : public Serializable {
-private:
+public:
     int id;
 	string name;
-public:
+    string credential;
 	User() : User(0, "") {}
-	User(int id, string name) {
+	User(int id, string name) : User(id, name, "") {}
+    User(int id, string name, string credential) {
         this->id = id;
-		this->name = name;
+		this->name = move(name);
+		this->credential = move(credential);
 	}
 	void deserialize(string raw) {
 		Serializable::deserialize(raw);
@@ -139,6 +141,62 @@ public:
 		return stringify();
 	}
 };
+
+//OP_SIGN_UP
+class SignUpRequest : public BaseRequest {
+public:
+    string name;
+    string credential;
+	SignUpRequest() {}
+	SignUpRequest(string name, string credential) {
+        this->operation = OP_SIGN_UP;
+		this->name = name;
+		this->credential = credential;
+	}
+    void deserialize(string raw) {
+        BaseRequest::deserialize(raw);
+        this->name = getByKey(KEY_NAME).GetString();
+		this->credential = getByKey(KEY_CREDENTIAL).GetString();
+    }
+	string serialize() {
+		BaseRequest::serialize();
+		addString(KEY_NAME, this->name);
+		addString(KEY_CREDENTIAL, this->credential);
+		return stringify();
+	}
+};
+class SignUpResponse : public BaseResponse {
+public:
+    SignUpResponse() {}
+	SignUpResponse(int code, const char * message) : BaseResponse(code, message) {}
+};
+
+//OP_LOG_IN
+class LogInRequest : public SignUpRequest {
+public:
+	LogInRequest() {}
+	LogInRequest(string name, string credential) : SignUpRequest(name, credential) {
+        this->operation = OP_LOG_IN;
+	}
+};
+class LogInResponse : public BaseResponse {
+public:
+    int token = -1;
+    LogInResponse() {}
+    LogInResponse(int code, const char * message, int token) : BaseResponse(code, message) {
+        this->token = token;
+    }
+    void deserialize(string raw) {
+        BaseResponse::deserialize(raw);
+        this->token = getByKey(KEY_TOKEN).GetInt();
+    }
+	string serialize() {
+		BaseResponse::serialize();
+		addInt(KEY_TOKEN, this->token);
+		return stringify();
+	}
+};
+
 
 class InviteUsersRequest : public BaseRequest {
 public:
@@ -162,23 +220,6 @@ public:
         // addObject("object", *this->data.front()); //this helps add object to json
         return stringify();
     }
-};
-
-class CreateUserRequest : public BaseRequest {
-public:
-    string name;
-    string credential;
-    void deserialize(string raw) {
-        BaseRequest::deserialize(raw);
-        this->name = getByKey(KEY_NAME).GetString();
-		this->credential = getByKey(KEY_CREDENTIAL).GetString();
-    }
-	string serialize() {
-		BaseRequest::serialize();
-		addString(KEY_NAME, this->name);
-		addString(KEY_CREDENTIAL, this->credential);
-		return stringify();
-	}
 };
 
 #endif
