@@ -1,27 +1,30 @@
 // Server.cpp : Defines the entry point for the console application.
 //
-
 #include "stdafx.h"
-#include "controller.h"
-#include "model.h"
-#include<iostream>
-using namespace std;
+#include "constant.h"
+#include <iostream>
+#include <string>
 
 
-int main(int argc, char const *argv[])
+
+int main()
 {
-	//client
-	CreateUserRequest request;
-	request.operation = OP_SIGN_UP;
-	request.name = "name";
-	request.credential = "pass";
-	string rawRequest = request.serialize();
 
 	AppController controller;
-	string res = controller.handleRequest(rawRequest);
-	BaseResponse response;
-	response.deserialize(res);
+
+	 SignUpRequest signUpRequest("admin2", "admin");
+	 string res1 = controller.handleRequest(signUpRequest.serialize());
+	 SignUpResponse signUpResponse;
+	 signUpResponse.deserialize(res1);
+	 cout << res1 << endl;
+	 cout << (signUpResponse.code == CODE_ERROR) << endl;
+
+	LogInRequest loginRequest("admin1", "admin");
+	string res2 = controller.handleRequest(loginRequest.serialize());
+	LogInResponse loginResponse;
+	loginResponse.deserialize(res2);
+	cout << res2 << endl;
+	cout << (loginResponse.code == CODE_SUCCESS) << endl;
 	
-	cout << response.code << endl;
 	return 0;
 }

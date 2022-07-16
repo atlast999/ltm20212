@@ -18,6 +18,7 @@
 #define MESSAGE_UNAUTHENTICATED "Unauthenticated"
 #define MESSAGE_INVALID_OPERATION "Invalid Operation"
 #define MESSAGE_NAME_INVALID "Invalid Name"
+#define MESSAGE_CREDENTIAL_INVALID "Password Invalide"
 
 #define OP_SIGN_UP 0
 #define OP_LOG_IN 1
@@ -29,6 +30,28 @@
 #define OP_CREATE_ASK_REQUEST 7
 #define OP_CREATE_INVITE_REQUEST 8
 #define OP_UPDATE_REQUEST 9
+
+
+#define QUERY_FIND_USER_BY_NAME R"(
+    SELECT * FROM users
+    WHERE 
+        users.name = '{}'
+    LIMIT 1
+)"
+
+#define QUERY_FIND_USER_BY_ID R"(
+    SELECT * FROM users
+    WHERE 
+        users.id = '{}'
+    LIMIT 1
+)"
+
+#define QUERY_CREATE_USER R"(
+    INSERT INTO users(name, credential)
+    VALUES
+    ('{}', '{}')
+)"
+
 
 
 #endif
