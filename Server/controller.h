@@ -36,13 +36,27 @@ private:
         return response.serialize();
     }
 
-    string getUsersNotJoiningEvent(string rawRequest) {
-        InviteUsersRequest request;
+    string getEvents(string rawRequest) {
+        ListEventRequest request;
         request.deserialize(rawRequest);
-        list<User*> users = service.getUsersNotJoiningEvent(request.eventId);
-        InviteUsersResponse response(CODE_SUCCESS, MESSAGE_SUCCESS, users);
-        return response.serialize();
+        list<Event*> events = service.getEvents(request);
+        return ListEventResponse(CODE_SUCCESS, MESSAGE_SUCCESS, events).serialize();
     }
+
+    string getRequests(string rawRequest) {
+        ListRequestRequest request;
+        request.deserialize(rawRequest);
+        list<AppRequest*> requests = service.getRequests(request);
+        return ListRequestResponse(CODE_SUCCESS, MESSAGE_SUCCESS, requests).serialize();
+    }
+
+    // string getUsersNotJoiningEvent(string rawRequest) {
+    //     InviteUsersRequest request;
+    //     request.deserialize(rawRequest);
+    //     list<User*> users = service.getUsersNotJoiningEvent(request.eventId);
+    //     InviteUsersResponse response(CODE_SUCCESS, MESSAGE_SUCCESS, users);
+    //     return response.serialize();
+    // }
 public:
     string handleRequest(string rawRequest) {
         BaseRequest request;
@@ -58,9 +72,15 @@ public:
         case OP_LOG_IN:
             return verifyUser(rawRequest);
             break;
-        case OP_USERS_NOT_JOINING_EVENT:
-            return getUsersNotJoiningEvent(rawRequest);
+        case OP_LIST_EVENT:
+            return getEvents(rawRequest);
             break;
+        case OP_LIST_REQUEST:
+            return getRequests(rawRequest);
+            break;
+        // case OP_USERS_NOT_JOINING_EVENT:
+        //     return getUsersNotJoiningEvent(rawRequest);
+        //     break;
         default:
             return BaseResponse(CODE_ERROR, MESSAGE_INVALID_OPERATION).serialize();
             break;
