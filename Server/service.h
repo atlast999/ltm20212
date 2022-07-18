@@ -88,19 +88,60 @@ public:
         token = user->id;
         return MESSAGE_SUCCESS;
     }
-    
 
-    list<User*> getUsersNotJoiningEvent(int eventId) {
-        list<User*> result;
-
-        //query from db to build list, below is just faking
-
-        for (int i = 1; i <= 3; i++) {
-            User *user = new User(i, "User " + to_string(i));
-            result.push_back(user);
+    list<Event*> getEvents(ListEventRequest &request) {
+        string query;
+        if (request.isMine) {
+            query = fmt::format(QUERY_LIST_EVENT_MINE, request.token);
+        } else {
+            query = fmt::format(QUERY_LIST_EVENT);
         }
+        MYSQL_RES *res_set = executeQuery(query);
+        MYSQL_ROW row;
+
+        list<Event*> result;
+        while(row = mysql_fetch_row(res_set)) {
+            int id = atoi(row[0]);
+            string name = row[1];
+            string description = row[2];
+            string time = row[3];
+            string location = row[4];
+            int owner = atoi(row[5]);
+            result.push_back(new Event(id, name, description, time, location, owner));
+        }
+        mysql_free_result(res_set);
         return result;
     }
+
+    list<AppRequest*> getRequests(ListRequestRequest& request) {
+        string query = fmt::format(QUERY_LIST_REQUEST, request.token);
+        MYSQL_RES *res_set = executeQuery(query);
+        MYSQL_ROW row;
+
+        list<AppRequest*> result;
+        while(row = mysql_fetch_row(res_set)) {
+            int id = atoi(row[0]);
+            int type = atoi(row[1]);
+            string event = row[2];
+            string targetUser = row[3];
+            result.push_back(new AppRequest(id, type, event, targetUser));
+        }
+        mysql_free_result(res_set);
+        return result;
+    }
+    
+
+    // list<User*> getUsersNotJoiningEvent(int eventId) {
+    //     list<User*> result;
+
+    //     //query from db to build list, below is just faking
+
+    //     for (int i = 1; i <= 3; i++) {
+    //         User *user = new User(i, "User " + to_string(i));
+    //         result.push_back(user);
+    //     }
+    //     return result;
+    // }
 };
 
 #endif

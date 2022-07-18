@@ -1,9 +1,11 @@
 #ifndef MODEL_H_
 #define MODEL_H_
+#define FMT_HEADER_ONLY
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "fmt\core.h"
 #include "constant.h"
 #include <string>
 #include <list>
@@ -104,16 +106,16 @@ public:
         this->code = code;
         this->message = string(message);
     }
+	void deserialize(string raw) {
+		Serializable::deserialize(raw);
+		this->code = getByKey(KEY_CODE).GetInt();
+		this->message = getByKey(KEY_MESSAGE).GetString();
+	}
     string serialize() {
 		Serializable::serialize();
         addInt(KEY_CODE, this->code);
 		addString(KEY_MESSAGE, this->message);
 		return stringify();
-	}
-	void deserialize(string raw) {
-		Serializable::deserialize(raw);
-		this->code = getByKey(KEY_CODE).GetInt();
-		this->message = getByKey(KEY_MESSAGE).GetString();
 	}
 };
 
@@ -126,20 +128,91 @@ public:
 	User(int id, string name) : User(id, name, "") {}
     User(int id, string name, string credential) {
         this->id = id;
-		this->name = move(name);
-		this->credential = move(credential);
+		this->name = name;
+		this->credential = credential;
 	}
 	void deserialize(string raw) {
 		Serializable::deserialize(raw);
         this->id = getByKey(KEY_ID).GetInt();
 		this->name = getByKey(KEY_NAME).GetString();
 	}
-	string serialize() {
+    string serialize() {
 		Serializable::serialize();
         addInt(KEY_ID, this->id);
 		addString(KEY_NAME, this->name);
 		return stringify();
 	}
+};
+
+class Event : public Serializable {
+public:
+    int id;
+	string name;
+    string description;
+    string time;
+    string location;
+    int owner;
+    Event(int id, string name, string description, string time, string location, int owner) {
+        this->id = id;
+		this->name = name;
+        this->description = description;
+        this->time = time;
+        this->location = location;
+        this->owner = owner;
+	}
+	void deserialize(string raw) {
+		Serializable::deserialize(raw);
+        this->id = getByKey(KEY_ID).GetInt();
+		this->name = getByKey(KEY_NAME).GetString();
+        this->description = getByKey(KEY_DESCRIPTION).GetString();
+        this->time = getByKey(KEY_TIME).GetString();
+        this->location = getByKey(KEY_LOCATION).GetString();
+        this->owner = getByKey(KEY_OWNER).GetInt();
+	}
+	string serialize() {
+		Serializable::serialize();
+        addInt(KEY_ID, this->id);
+		addString(KEY_NAME, this->name);
+        addString(KEY_DESCRIPTION, this->description);
+        addString(KEY_TIME, this->time);
+        addString(KEY_LOCATION, this->location);
+        addInt(KEY_OWNER, this->owner);
+		return stringify();
+	}
+};
+
+#define REQUEST_TYPE_INVITE 1
+#define REQUEST_TYPE_ASK 2
+#define INVITE_REQUEST_NAME "{} invited you to join event {}"
+#define ASK_REQUEST_NAME "{} asked to join your event {}"
+
+class AppRequest : public Serializable {
+public: 
+    int id;
+    string name;
+    AppRequest(int id, int type, string event, string targetUser) {
+        this->id = id;
+        if (type == REQUEST_TYPE_INVITE) {
+            this->name = fmt::format(INVITE_REQUEST_NAME, targetUser, event);
+        }
+        else {
+            this->name = fmt::format(ASK_REQUEST_NAME, targetUser, event);
+        }
+        this->name = "a really truly totally long string instance";
+        cout << "create request: " << this->name << endl;
+    }
+    void deserialize(string raw) {
+        Serializable::deserialize(raw);
+        this->id = getByKey(KEY_ID).GetInt();
+        this->name = getByKey(KEY_NAME).GetString();
+    }
+    string serialize() {
+        Serializable::serialize();
+        addInt(KEY_ID, this->id);
+        addString(KEY_NAME, this->name);
+        return stringify();
+    }
+
 };
 
 //OP_SIGN_UP
@@ -197,29 +270,85 @@ public:
 	}
 };
 
-
-class InviteUsersRequest : public BaseRequest {
+//OP_LIST_EVENT
+class ListEventRequest : public BaseRequest {
 public:
-    int eventId;
+    int isMine = 1;
+    ListEventRequest() {}
+    ListEventRequest(int isMine, int token) {
+        this->operation = OP_LIST_EVENT;
+        this->token = token;
+        this->isMine = isMine;
+    }
     void deserialize(string raw) {
         BaseRequest::deserialize(raw);
-        this->eventId = getByKey(KEY_EVENT_ID).GetInt();
-    }
-};
-
-class InviteUsersResponse : public BaseResponse {
-private:
-    list<User*> users;
-public:
-    InviteUsersResponse(int code, const char * message, list<User*> &users) : BaseResponse(code, message) {
-        this->users = users;
+        this->isMine = getByKey(KEY_MINE).GetInt();
     }
     string serialize() {
-        BaseResponse::serialize();
-        addArray(KEY_DATA, this->users);
-        // addObject("object", *this->data.front()); //this helps add object to json
+        BaseRequest::serialize();
+        addInt(KEY_MINE, this->isMine);
         return stringify();
     }
 };
+class ListEventResponse : public BaseResponse {
+public:
+    list<Event*> events;
+    ListEventResponse() {}
+    ListEventResponse(int code, const char* message, list<Event*>& events) : BaseResponse(code, message) {
+        this->events = events;
+    }
+    string serialize() {
+        BaseResponse::serialize();
+        addArray(KEY_DATA, this->events);
+        return stringify();
+    }
+};
+
+//OP_LIST_REQUEST
+class ListRequestRequest : public BaseRequest {
+public:
+    ListRequestRequest() { }
+    ListRequestRequest(int token) {
+        this->operation = OP_LIST_REQUEST;
+        this->token = token;
+    }
+};
+class ListRequestResponse : public BaseResponse {
+public:
+    list<AppRequest*> requests;
+    ListRequestResponse() {}
+    ListRequestResponse(int code, const char * message, list<AppRequest*>& requests) : BaseResponse(code, message) {
+        this->requests = requests;
+    }
+    string serialize() {
+        BaseResponse::serialize();
+        addArray(KEY_DATA, this->requests);
+        return stringify();
+    }
+};
+
+//class InviteUsersRequest : public BaseRequest {
+//public:
+//    int eventId;
+//    void deserialize(string raw) {
+//        BaseRequest::deserialize(raw);
+//        this->eventId = getByKey(KEY_EVENT_ID).GetInt();
+//    }
+//};
+//
+//class InviteUsersResponse : public BaseResponse {
+//private:
+//    list<User*> users;
+//public:
+//    InviteUsersResponse(int code, const char * message, list<User*> &users) : BaseResponse(code, message) {
+//        this->users = users;
+//    }
+//    string serialize() {
+//        BaseResponse::serialize();
+//        addArray(KEY_DATA, this->users);
+//        // addObject("object", *this->data.front()); //this helps add object to json
+//        return stringify();
+//    }
+//};
 
 #endif
