@@ -9,7 +9,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h> //inet_pton
 
-#include "Util.h"
+#include "util.h"
 
 #define BUFFER_SIZE 2048
 #define gets_s(x, len) fgets((x), (len) + 1, stdin)

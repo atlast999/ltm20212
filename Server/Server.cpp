@@ -26,7 +26,7 @@ int main()
 	//cout << res2 << endl;
 	//cout << (loginResponse.code == CODE_SUCCESS) << endl;
 
-	ListEventRequest eventRequest(1, 2);
+	ListEventRequest eventRequest(0, 2);
 	string res3 = controller.handleRequest(eventRequest.serialize());
 	ListEventResponse eventResponse;
 	eventResponse.deserialize(res3);
