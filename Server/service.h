@@ -107,7 +107,7 @@ public:
             string time = row[3];
             string location = row[4];
             int owner = atoi(row[5]);
-            result.push_back(new Event(id, name, description, time, location, owner));
+            result.emplace_back(new Event(id, name, description, time, location, owner));
         }
         mysql_free_result(res_set);
         return result;
@@ -124,7 +124,7 @@ public:
             int type = atoi(row[1]);
             string event = row[2];
             string targetUser = row[3];
-            result.push_back(new AppRequest(id, type, event, targetUser));
+            result.emplace_back(new AppRequest(id, type, event, targetUser));
         }
         mysql_free_result(res_set);
         return result;

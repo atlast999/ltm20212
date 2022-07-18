@@ -39,7 +39,17 @@ public:
 		this->document.SetObject();
 		return "";
 	}
+    /**
+    * SubType needs to override this in order to be a array response
+    */
+    virtual Value& toObject() {
+        Value object(kObjectType);
+        return object;
+    }
 protected:
+    Document::AllocatorType& getAllocator() {
+        return document.GetAllocator();
+    }
 	Value& getByKey(const char * key) {
 		return this->document[key];
 	}
@@ -54,12 +64,13 @@ protected:
     template<typename T>
     void addArray(const char * key, list<T> &values) {
         Value array(kArrayType);
-        array.SetArray();
+        array.Reserve(values.size(), document.GetAllocator());
         for (Serializable *value : values) {
             string raw = value->serialize();
-            Document item;
-            item.Parse(raw.c_str());
-            array.PushBack(item, document.GetAllocator());
+            Document itemDoc;
+            itemDoc.Parse(raw.c_str());
+            Value itemObj(itemDoc, itemDoc.GetAllocator());
+            array.PushBack(itemObj, document.GetAllocator());
         }
         document.AddMember(StringRef(key), array, document.GetAllocator());
     }
@@ -179,6 +190,10 @@ public:
         addInt(KEY_OWNER, this->owner);
 		return stringify();
 	}
+   /* Value& toObject() {
+        Value &object = Serializable::toObject();
+        object.AddMember()
+    }*/
 };
 
 #define REQUEST_TYPE_INVITE 1
@@ -198,8 +213,6 @@ public:
         else {
             this->name = fmt::format(ASK_REQUEST_NAME, targetUser, event);
         }
-        this->name = "a really truly totally long string instance";
-        cout << "create request: " << this->name << endl;
     }
     void deserialize(string raw) {
         Serializable::deserialize(raw);
