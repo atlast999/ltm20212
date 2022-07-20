@@ -15,6 +15,7 @@
 #define KEY_LOCATION "location"
 #define KEY_OWNER "owner"
 #define KEY_MINE "isMine"
+#define KEY_STATUS "status"
 
 #define CODE_SUCCESS 200
 #define CODE_ERROR 400
@@ -24,6 +25,7 @@
 #define MESSAGE_INVALID_OPERATION "Invalid Operation"
 #define MESSAGE_NAME_INVALID "Invalid Name"
 #define MESSAGE_CREDENTIAL_INVALID "Password Invalide"
+#define MESSAGE_EVENT_NOT_EXIST "Event is not exist"
 
 #define OP_SIGN_UP 0
 #define OP_LOG_IN 1
@@ -36,6 +38,13 @@
 #define OP_CREATE_INVITE_REQUEST 8
 #define OP_UPDATE_REQUEST 9
 
+
+#define REQUEST_TYPE_INVITE 1
+#define REQUEST_TYPE_ASK 2
+#define INVITE_REQUEST_NAME "{} invited you to join event {}"
+#define ASK_REQUEST_NAME "{} asked to join your event {}"
+#define REQUEST_STATUS_ACCEPT 1
+#define REQUEST_STATUS_REJECT 2
 
 #define QUERY_FIND_USER_BY_NAME R"(
     SELECT * FROM users
@@ -67,6 +76,34 @@
         events.owner = {}
 )"
 
+#define QUERY_GET_EVENT_BY_ID R"(
+    SELECT * FROM events
+    WHERE
+        events.id = {}
+)"
+
+#define QUERY_CREATE_EVENT R"(
+    INSERT INTO events(name, description, time, location, owner)
+    VALUES
+    ('{}', '{}', '{}', '{}', {})
+)"
+
+#define QUERY_CREATE_MEMBERSHIP R"(
+    INSERT INTO memberships(eventId, userId)
+    VALUES
+    ({}, {})
+)"
+
+#define QUERY_USERS_NOT_JOIN_EVENT R"(
+    SELECT * FROM users
+    WHERE users.id NOT IN (
+        SELECT memberships.userId
+        FROM memberships
+        WHERE
+            memberships.eventId = {}
+    )
+)"
+
 #define QUERY_LIST_REQUEST R"(
     SELECT requests.id, requests.type, events.name AS eventName, targetUser.name AS targetUser
     FROM requests, events, users AS targetUser
@@ -77,6 +114,29 @@
         targetUser.id = requests.target
 )"
 
+#define QUERY_CREATE_ASK_REQUEST R"(
+    INSERT INTO requests(eventId, owner, target, type, status)
+    VALUES
+    ({}, {}, {}, 2, 0)
+)"
 
+#define QUERY_CREATE_INVITE_REQUEST R"(
+    INSERT INTO requests(eventId, owner, target, type, status) 
+    VALUES
+    {}
+)"
+
+#define INSERT_INVITE_REQUEST_PATTERN "({}, {}, {}, 1, 0)"
+
+#define QUERY_UPDATE_REQUEST R"(
+    UPDATE requests
+    SET status = {}
+    WHERE id = {}
+)"
+
+#define QUERY_GET_REQUEST_BY_ID R"(
+    SELECT * FROM requests
+    WHERE requests.id = {}
+)"
 
 #endif

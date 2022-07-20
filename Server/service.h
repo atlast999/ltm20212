@@ -4,14 +4,15 @@
 
 #include "model.h"
 #include "constant.h"
-#include<vector>
-#include<string>
+#include <sstream>
+#include <list>
+#include <string>
 #include "fmt\core.h"
 #include "mysql\mysql.h"
 
 using namespace std;
 // Defining Constant Variables
-#define SERVER "35.77.223.104"
+#define SERVER "mysql.hoanandroid.app"
 #define USER "ltm20212" 
 #define PASSWORD "ltm20212"
 #define DATABASE "ltm20212" 
@@ -49,6 +50,24 @@ private:
         string credential = row[2];
         mysql_free_result(res_set);
 		return new User(id, name, credential);
+    }
+
+    inline bool createMembership(int eventId, int userId) {
+        string query = fmt::format(QUERY_CREATE_MEMBERSHIP, eventId, userId);
+        executeQuery(query);
+        return TRUE;
+    }
+
+    string joinToString(list<string> tokens, string del = " ")
+    {
+        ostringstream stream;
+        bool applyDel = false;
+        for (string token : tokens)
+        {
+            stream << (applyDel ? del : "") << token;
+            applyDel = true;
+        }
+        return stream.str();
     }
 public:
     AppService() {
@@ -113,6 +132,46 @@ public:
         return result;
     }
 
+    Event* getEventDetail(DetailEventRequest &request) {
+        string query = fmt::format(QUERY_GET_EVENT_BY_ID, request.eventId);
+        MYSQL_RES* res_set = executeQuery(query);
+        MYSQL_ROW row = mysql_fetch_row(res_set);
+        if (row == NULL) return NULL;
+        int id = atoi(row[0]);
+        string name = row[1];
+        string description = row[2];
+        string time = row[3];
+        string location = row[4];
+        int owner = atoi(row[5]);
+        mysql_free_result(res_set);
+        return new Event(id, name, description, time, location, owner);
+    }
+
+    string createEvent(CreateEventRequest& request) {
+        Event* event = request.event;
+        string addEventQuery = fmt::format(QUERY_CREATE_EVENT, event->name, event->description, event->time, event->location, event->owner);
+        executeQuery(addEventQuery);
+        int eventId = mysql_insert_id(connect);
+        createMembership(eventId, event->owner);
+        return MESSAGE_SUCCESS;
+    }
+
+    list<User*> getUsersNotJoinEvent(FreeUsersRequest &request) {
+         string query = fmt::format(QUERY_USERS_NOT_JOIN_EVENT, request.eventId);
+         MYSQL_RES* res_set = executeQuery(query);
+         MYSQL_ROW row;
+
+         list<User*> result;
+         while (row = mysql_fetch_row(res_set)) {
+             int id = atoi(row[0]);
+             string name = row[1];
+             string credential = row[2];
+             result.emplace_back(new User(id, name, credential));
+         }
+         mysql_free_result(res_set);
+         return result;
+     }
+
     list<AppRequest*> getRequests(ListRequestRequest& request) {
         string query = fmt::format(QUERY_LIST_REQUEST, request.token);
         MYSQL_RES *res_set = executeQuery(query);
@@ -130,18 +189,44 @@ public:
         return result;
     }
     
+    string createAskRequest(CreateAskRequest& request) {
+        string query = fmt::format(QUERY_CREATE_ASK_REQUEST, request.eventId, request.eventOwner, request.token);
+        executeQuery(query);
+        return MESSAGE_SUCCESS;
+    }
+    
+    string createInviteRequest(CreateInviteRequest& request) {
+        list<string> insertRows;
+        for (User* user : request.users) {
+            string row = fmt::format(INSERT_INVITE_REQUEST_PATTERN, request.eventId, user->id, request.token);
+            insertRows.emplace_back(row);
+        }
+        string query = fmt::format(QUERY_CREATE_INVITE_REQUEST, joinToString(insertRows, ",\n"));
+        executeQuery(query);
+        return MESSAGE_SUCCESS;
+    }
 
-    // list<User*> getUsersNotJoiningEvent(int eventId) {
-    //     list<User*> result;
-
-    //     //query from db to build list, below is just faking
-
-    //     for (int i = 1; i <= 3; i++) {
-    //         User *user = new User(i, "User " + to_string(i));
-    //         result.push_back(user);
-    //     }
-    //     return result;
-    // }
+    string updateRequest(UpdateRequest& request) {
+        string updateQuery = fmt::format(QUERY_UPDATE_REQUEST, request.status, request.requestId);
+        MYSQL_RES* res_set = executeQuery(updateQuery);
+        if (request.status == REQUEST_STATUS_ACCEPT) {
+            string findQuery = fmt::format(QUERY_GET_REQUEST_BY_ID, request.requestId);
+            MYSQL_RES* res_set = executeQuery(findQuery);
+            MYSQL_ROW row = mysql_fetch_row(res_set);
+            int eventId = atoi(row[1]);
+            int requestOwner = atoi(row[2]);
+            int target = atoi(row[3]);
+            int requestType = atoi(row[4]);
+            mysql_free_result(res_set);
+            if (requestType == REQUEST_TYPE_ASK) {
+                createMembership(eventId, target);
+            }
+            else {
+                createMembership(eventId, requestOwner);
+            }
+        }
+        return MESSAGE_SUCCESS;
+    }
 };
 
 #endif
