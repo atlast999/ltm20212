@@ -49,8 +49,20 @@ protected:
     void getObjectByKey(const char* key, Serializable& model) {
         StringBuffer buffer;
         Writer<StringBuffer> writer(buffer);
-        (this->document[key]).Accept(writer);
+        getByKey(key).Accept(writer);
         model.deserialize(buffer.GetString());
+    }
+    template<typename T>
+    void getArrayByKey(const char* key, list<T*>& result) {
+        Value& array = getByKey(key);
+        for (Value& item : array.GetArray()) {
+            StringBuffer buffer;
+            Writer<StringBuffer> writer(buffer);
+            item.Accept(writer);
+            T* model = new T();
+            model->deserialize(buffer.GetString());
+            result.emplace_back(model);
+        }
     }
 	void addString(const char * key, string value) {
 		Value val(kObjectType);
@@ -308,6 +320,10 @@ public:
     ListEventResponse(int code, const char* message, list<Event*>& events) : BaseResponse(code, message) {
         this->events = events;
     }
+    void deserialize(string raw) {
+        BaseResponse::deserialize(raw);
+        getArrayByKey(KEY_DATA, this->events);
+    }
     string serialize() {
         BaseResponse::serialize();
         addArray(KEY_DATA, this->events);
@@ -396,12 +412,15 @@ public:
     }
 };
 class FreeUsersResponse : public BaseResponse {
-private:
-    list<User*> users;
 public:
+    list<User*> users;
     FreeUsersResponse() {}
     FreeUsersResponse(int code, const char * message, list<User*>& users) : BaseResponse(code, message) {
         this->users = users;
+    }
+    void deserialize(string raw) {
+        BaseResponse::deserialize(raw);
+        getArrayByKey(KEY_DATA, this->users);
     }
     string serialize() {
         BaseResponse::serialize();
@@ -422,6 +441,10 @@ public:
     ListRequestResponse() {}
     ListRequestResponse(int code, const char * message, list<AppRequest*>& requests) : BaseResponse(code, message) {
         this->requests = requests;
+    }
+    void deserialize(string raw) {
+        BaseResponse::deserialize(raw);
+        getArrayByKey(KEY_DATA, this->requests);
     }
     string serialize() {
         BaseResponse::serialize();
@@ -458,19 +481,13 @@ public:
 class CreateInviteRequest : public DetailEventRequest {
 public: 
     list<User*> users;
-    CreateInviteRequest() {
-        //fake
-        this->operation = OP_CREATE_INVITE_REQUEST;
-        this->eventId = 4;
-        this->token = 2;
-        this->users.emplace_back(new User(1, "admin"));
-    }
+    CreateInviteRequest() { }
     CreateInviteRequest(int eventId, list<User*>& users, int token) : DetailEventRequest(OP_CREATE_INVITE_REQUEST, eventId, token) {
         this->users = users;
     }
     void deserialize(string raw) {
         BaseRequest::deserialize(raw);
-
+        getArrayByKey(KEY_DATA, this->users);
     }
     string serialize() {
         BaseRequest::serialize();
