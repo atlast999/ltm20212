@@ -55,12 +55,13 @@ int main()
 	//cout << res6 << endl;
 	//cout << (edResponse.code == CODE_SUCCESS) << endl;
 
-	//FreeUsersRequest fusersRequest(4, 2);
-	//string res7 = controller.handleRequest(fusersRequest.serialize());
-	//FreeUsersResponse fusersResponse;
-	//fusersResponse.deserialize(res7);
-	//cout << res7 << endl;
-	//cout << (fusersResponse.code == CODE_SUCCESS) << endl;
+	FreeUsersRequest fusersRequest(4, 2);
+	string res7 = controller.handleRequest(fusersRequest.serialize());
+	FreeUsersResponse fusersResponse;
+	fusersResponse.deserialize(res7);
+	cout << res7 << endl;
+	cout << (fusersResponse.code == CODE_SUCCESS) << endl;
+	cout << fusersResponse.users.size() << endl;
 
 	//CreateAskRequest askRequest(4, 2, 3);
 	//string res8 = controller.handleRequest(askRequest.serialize());
@@ -76,12 +77,12 @@ int main()
 	//cout << res9 << endl;
 	//cout << (inviteResponse.code == CODE_SUCCESS) << endl;
 
-	UpdateRequest uRequest(4, 1, 2);
-	string res10 = controller.handleRequest(uRequest.serialize());
-	UpdateResponse uResponse;
-	uResponse.deserialize(res10);
-	cout << res10 << endl;
-	cout << (uResponse.code == CODE_SUCCESS) << endl;
+	//UpdateRequest uRequest(4, 1, 2);
+	//string res10 = controller.handleRequest(uRequest.serialize());
+	//UpdateResponse uResponse;
+	//uResponse.deserialize(res10);
+	//cout << res10 << endl;
+	//cout << (uResponse.code == CODE_SUCCESS) << endl;
 
 	system("pause");
 	return 0;
