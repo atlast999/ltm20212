@@ -2,6 +2,7 @@
 #ifndef CONSTANT_H_
 #define CONSTANT_H_
 
+//Json keys used for data model
 #define KEY_ID "id"
 #define KEY_NAME "name"
 #define KEY_CREDENTIAL "credential"
@@ -18,9 +19,10 @@
 #define KEY_MINE "isMine"
 #define KEY_STATUS "status"
 
+//Response codes
 #define CODE_SUCCESS 200
 #define CODE_ERROR 400
-
+//Response messages
 #define MESSAGE_SUCCESS "OK"
 #define MESSAGE_UNAUTHENTICATED "Unauthenticated"
 #define MESSAGE_INVALID_OPERATION "Invalid Operation"
@@ -28,6 +30,7 @@
 #define MESSAGE_CREDENTIAL_INVALID "Password Invalide"
 #define MESSAGE_EVENT_NOT_EXIST "Event is not exist"
 
+//Request operations (App's usecases)
 #define OP_SIGN_UP 0
 #define OP_LOG_IN 1
 #define OP_LIST_EVENT 2
@@ -39,7 +42,7 @@
 #define OP_CREATE_INVITE_REQUEST 8
 #define OP_UPDATE_REQUEST 9
 
-
+//App's request feature related
 #define REQUEST_TYPE_INVITE 1
 #define REQUEST_TYPE_ASK 2
 #define INVITE_REQUEST_NAME "{} invited you to join event {}"
@@ -47,6 +50,7 @@
 #define REQUEST_STATUS_ACCEPT 1
 #define REQUEST_STATUS_REJECT 2
 
+//Database queries
 #define QUERY_FIND_USER_BY_NAME R"(
     SELECT * FROM users
     WHERE 

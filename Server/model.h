@@ -3,22 +3,22 @@
 #define MODEL_H_
 #define FMT_HEADER_ONLY
 
+#include <string>
+#include <list>
+#include<iostream>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "fmt\core.h"
 #include "constant.h"
-#include <string>
-#include <list>
 
-#include<iostream>
 
 using namespace rapidjson;
 using namespace std;
 
 /**
- * Interface allows to convert model to json string and vice versa
- *
+ * An Interface allows to convert model to json string and vice versa
+ * Every transferred data model needs to implement this
  */
 class Serializable
 {
@@ -27,7 +27,8 @@ private:
 public:
     /**
     * To convert json string to model
-    * SubType needs to call this before converting
+    * SubType needs to provide a default constructor and to call this before converting
+    * Defined virtual so that function of derrived type could be call at runtime
     */
     virtual void deserialize(string raw) {
         this->document.Parse(raw.c_str());
@@ -35,15 +36,14 @@ public:
     /**
     * To convert model to json string
     * SubType needs to call this before converting
+    * Defined virtual so that function of derrived type could be call at runtime
     */
     virtual string serialize() {
         this->document.SetObject();
         return "";
     }
 protected:
-    Document::AllocatorType& getAllocator() {
-        return document.GetAllocator();
-    }
+    //Deserializing helper functions
     Value& getByKey(const char* key) {
         return this->document[key];
     }
@@ -65,6 +65,7 @@ protected:
             result.emplace_back(model);
         }
     }
+    //Serializing helper functions
     void addString(const char* key, string value) {
         Value val(kObjectType);
         val.SetString(value.c_str(), value.length(), document.GetAllocator());
@@ -84,9 +85,6 @@ protected:
             Value itemObj(itemDoc, document.GetAllocator());
             array.PushBack(itemObj, document.GetAllocator());
         }
-        StringBuffer buffer;
-        Writer<StringBuffer> writer(buffer);
-        array.Accept(writer);
         document.AddMember(StringRef(key), array, document.GetAllocator());
     }
     void addObject(const char* key, Serializable& value) {
@@ -532,6 +530,5 @@ public:
     UpdateResponse() {}
     UpdateResponse(int code, const char* message) : BaseResponse(code, message) {}
 };
-
 
 #endif

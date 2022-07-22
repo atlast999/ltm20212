@@ -3,16 +3,16 @@
 #define SERVICE_H_
 #define FMT_HEADER_ONLY
 
-#include "model.h"
-#include "constant.h"
 #include <sstream>
 #include <list>
 #include <string>
 #include "fmt\core.h"
 #include "mysql\mysql.h"
+#include "model.h"
+#include "constant.h"
 
 using namespace std;
-// Defining Constant Variables
+
 #define SERVER "mysql.hoanandroid.app"
 #define USER "ltm20212" 
 #define PASSWORD "ltm20212"
@@ -22,13 +22,13 @@ using namespace std;
 class AppService {
 private:
     MYSQL* connect;
-    //always call mysql_free_result(res_set) after being done with res_set
-    inline MYSQL_RES* executeQuery(string query) {
+    //Remember to call mysql_free_result(res_set) after being done with res_set
+    MYSQL_RES* executeQuery(string query) {
         mysql_query(connect, query.c_str());
         return mysql_use_result(connect);
     }
 
-    inline User* findUserByName(string username) {
+    User* findUserByName(string username) {
         string query = fmt::format(QUERY_FIND_USER_BY_NAME, username);
         MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row = mysql_fetch_row(res_set);
@@ -40,7 +40,7 @@ private:
         return new User(id, name, credential);
     }
 
-    inline User* findUserById(int userId) {
+    User* findUserById(int userId) {
         string query = fmt::format(QUERY_FIND_USER_BY_ID, userId);
         MYSQL_RES* res_set = executeQuery(query);
         mysql_free_result(res_set);
@@ -53,7 +53,7 @@ private:
         return new User(id, name, credential);
     }
 
-    inline bool createMembership(int eventId, int userId) {
+    bool createMembership(int eventId, int userId) {
         string query = fmt::format(QUERY_CREATE_MEMBERSHIP, eventId, userId);
         executeQuery(query);
         return TRUE;
@@ -70,6 +70,7 @@ private:
         }
         return stream.str();
     }
+
 public:
     AppService() {
         connect = mysql_init(NULL);
@@ -86,7 +87,9 @@ public:
     }
     ~AppService() {
         mysql_close(connect);
+        delete connect;
     }
+
     string createNewUser(SignUpRequest& request) {
         User* user = findUserByName(request.name);
         if (user != NULL) {
