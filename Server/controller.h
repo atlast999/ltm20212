@@ -2,11 +2,12 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
+#include<vector>
+#include<string>
+
 #include "constant.h"
 #include "model.h"
 #include "service.h"
-#include<vector>
-#include<string>
 
 class AppController {
 private:

@@ -11,10 +11,13 @@
 
 using namespace std;
 
-#define OP_READ 0
-#define OP_WRITE 1
+#define OP_READY_TO_RECEIVE 0
+#define OP_READY_TO_SEND 1
 #define BUFFER_SIZE 20240
-
+/**
+ * A class represents attributes associated with client socket
+ * Used as completionKey in IOCP related functions
+ */
 class AppSession {
 public:
 	SOCKET client;
@@ -51,15 +54,18 @@ public:
 		this->wsaBuf->len = BUFFER_SIZE;
 	}
 };
-
+/**
+ * Global variables and functions
+ * Used for managing client connections synchronously
+ */
 CRITICAL_SECTION criticalSection;
 list<AppSession*> appSessions;
 void addNewSession(AppSession* session) {
 	EnterCriticalSection(&criticalSection);
 	appSessions.emplace_back(session);
+	cout << "A client was added to list: " << session->client << endl;
 	LeaveCriticalSection(&criticalSection);
 }
-
 void removeSession(AppSession* session) {
 	EnterCriticalSection(&criticalSection);
 	appSessions.remove(session);
@@ -70,11 +76,13 @@ void removeSession(AppSession* session) {
 
 HANDLE ioCompletionPort;
 class ServerSocket {
+
 private:
 	SOCKET socket;
 	string ip;
 	int port;
 	AppController* controller;
+
 	/*
 	* Initialize for using Winsock
 	* return true if success, else otherwise
@@ -92,8 +100,7 @@ private:
 		return 1;
 	}
 	/*
-	* Create TCP socket
-	* param: instance[OUT] - pointer to the socket created
+	* Create TCP socket with overlapped option
 	* return true if success, false otherwise
 	*/
 	bool initTCPSocket()
@@ -111,8 +118,6 @@ private:
 	}
 	/*
 	* Bind a socket to a host's specific address
-	* params: instance[IN/OUT] - the socket to be bond
-	*		  port[IN] - a host's port to be bond
 	* return true if success, false otherwise
 	*/
 	bool bindAddToSocket()
@@ -139,8 +144,7 @@ private:
 		SYSTEM_INFO info;
 		GetSystemInfo(&info);
 		int nCpu = info.dwNumberOfProcessors;
-		//nCpu * 2
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < nCpu * 2; i++) {
 			_beginthreadex(0, 0, ServerSocket::serveIOThread, (void*)this->controller, 0, 0);
 		}
 		return 1;
@@ -166,18 +170,19 @@ public:
 		// Keep trying to listen until success
 		while (listen(socket, 10))
 		{
-			cout << "Error in listenning! Attempting to try again..." << WSAGetLastError() << endl;;
+			cout << "Error in listenning! Attempting to try again... " << WSAGetLastError() << endl;;
 		}
+		cout << "Server started at port: " << port << endl;
 
-		cout << endl
-			<< "Server started at port: " << port << endl;
 		_beginthreadex(0, 0, ServerSocket::acceptThread, (void*)this->socket, 0, 0);
 		while (true);
 		return 1;
-
 	}
 
 public:
+	/*
+	* A thread used for accepting new connections
+	*/
 	static unsigned __stdcall acceptThread(LPVOID socket) {
 		SOCKET server = (SOCKET)socket;
 		sockaddr_in clientAddr;
@@ -187,21 +192,23 @@ public:
 				continue;
 			}
 			AppSession* session = new AppSession(client);
-			session->opCode = OP_READ;
+			session->opCode = OP_READY_TO_RECEIVE;
 			addNewSession(session);
-			cout << "A client was added to list: " << session->client << endl;
 			HANDLE associate = CreateIoCompletionPort((HANDLE)session->client, ioCompletionPort, (ULONG_PTR)session, 0);
 			if (associate == NULL) {
 				removeSession(session);
 				continue;
 			}
-			session->opCode = OP_WRITE;
+			//Execute the first receive operation, following operations will be processed in io threads
+			session->opCode = OP_READY_TO_SEND;
 			DWORD pBytes = 0, pFlag = 0;
 			WSARecv(session->client, session->wsaBuf, 1,
 				&pBytes, &pFlag, session->overlap, NULL);
 		}
 	}
-
+	/*
+	* Threads used for processing IOCP events
+	*/
 	static unsigned __stdcall serveIOThread(LPVOID appController) {
 		AppController* controller = (AppController*)appController;
 		DWORD bytesTransferred = 0;
@@ -217,16 +224,16 @@ public:
 				INFINITE
 			);
 			if (ret == 0 || bytesTransferred == 0) {
-				//lost connection
+				//client disconnected
 				removeSession(session);
 				continue;
 			}
 			switch (session->opCode) {
-			case OP_READ:
+			case OP_READY_TO_RECEIVE:
 				session->sentBytes += bytesTransferred;
 				if (session->sentBytes < session->totalBytes) {
-					session->opCode = OP_READ;
-					session->wsaBuf->buf += session->sentBytes;
+					session->opCode = OP_READY_TO_RECEIVE;
+					session->wsaBuf->buf += bytesTransferred;
 					session->wsaBuf->len = session->totalBytes - session->sentBytes;
 					int ret = WSASend(
 						session->client,
@@ -239,11 +246,10 @@ public:
 					);
 					if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 						removeSession(session);
-
 					}
 				}
 				else {
-					session->opCode = OP_WRITE;
+					session->opCode = OP_READY_TO_SEND;
 					session->clearBuffer();
 					int ret = WSARecv(
 						session->client,
@@ -259,8 +265,8 @@ public:
 					}
 				}
 				break;
-			case OP_WRITE:
-				session->opCode = OP_READ;
+			case OP_READY_TO_SEND:
+				session->opCode = OP_READY_TO_RECEIVE;
 				string response = controller->handleRequest(string(session->buffer));
 				strcpy_s(session->buffer, response.c_str());
 				session->sentBytes = 0;
