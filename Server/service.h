@@ -1,3 +1,4 @@
+#pragma once
 #ifndef SERVICE_H_
 #define SERVICE_H_
 #define FMT_HEADER_ONLY
@@ -20,36 +21,36 @@ using namespace std;
 
 class AppService {
 private:
-    MYSQL *connect;
-	//always call mysql_free_result(res_set) after being done with res_set
-    inline MYSQL_RES * executeQuery(string query) {
+    MYSQL* connect;
+    //always call mysql_free_result(res_set) after being done with res_set
+    inline MYSQL_RES* executeQuery(string query) {
         mysql_query(connect, query.c_str());
         return mysql_use_result(connect);
     }
 
-    inline User * findUserByName(string username) {
+    inline User* findUserByName(string username) {
         string query = fmt::format(QUERY_FIND_USER_BY_NAME, username);
-		MYSQL_RES *res_set = executeQuery(query);
+        MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row = mysql_fetch_row(res_set);
         if (row == NULL) return NULL;
-		int id = atoi(row[0]);
+        int id = atoi(row[0]);
         string name = row[1];
         string credential = row[2];
         mysql_free_result(res_set);
-		return new User(id, name, credential);
+        return new User(id, name, credential);
     }
 
-    inline User * findUserById(int userId) {
+    inline User* findUserById(int userId) {
         string query = fmt::format(QUERY_FIND_USER_BY_ID, userId);
-		MYSQL_RES *res_set = executeQuery(query);
-		mysql_free_result(res_set);
+        MYSQL_RES* res_set = executeQuery(query);
+        mysql_free_result(res_set);
         MYSQL_ROW row = mysql_fetch_row(res_set);
         if (row == NULL) return NULL;
-		int id = atoi(row[0]);
+        int id = atoi(row[0]);
         string name = row[1];
         string credential = row[2];
         mysql_free_result(res_set);
-		return new User(id, name, credential);
+        return new User(id, name, credential);
     }
 
     inline bool createMembership(int eventId, int userId) {
@@ -84,10 +85,10 @@ public:
         // }
     }
     ~AppService() {
-	    mysql_close(connect);
+        mysql_close(connect);
     }
-    string createNewUser(SignUpRequest &request) {
-		User * user = findUserByName(request.name);
+    string createNewUser(SignUpRequest& request) {
+        User* user = findUserByName(request.name);
         if (user != NULL) {
             return MESSAGE_NAME_INVALID;
         }
@@ -96,8 +97,8 @@ public:
         return MESSAGE_SUCCESS;
     }
 
-    string verifyUser(LogInRequest &request, int& token) {
-        User * user = findUserByName(request.name);
+    string verifyUser(LogInRequest& request, int& token) {
+        User* user = findUserByName(request.name);
         if (user == NULL) {
             return MESSAGE_NAME_INVALID;
         }
@@ -108,18 +109,19 @@ public:
         return MESSAGE_SUCCESS;
     }
 
-    list<Event*> getEvents(ListEventRequest &request) {
+    list<Event*> getEvents(ListEventRequest& request) {
         string query;
         if (request.isMine) {
             query = fmt::format(QUERY_LIST_EVENT_MINE, request.token);
-        } else {
+        }
+        else {
             query = fmt::format(QUERY_LIST_EVENT);
         }
-        MYSQL_RES *res_set = executeQuery(query);
+        MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row;
 
         list<Event*> result;
-        while(row = mysql_fetch_row(res_set)) {
+        while (row = mysql_fetch_row(res_set)) {
             int id = atoi(row[0]);
             string name = row[1];
             string description = row[2];
@@ -132,7 +134,7 @@ public:
         return result;
     }
 
-    Event* getEventDetail(DetailEventRequest &request) {
+    Event* getEventDetail(DetailEventRequest& request) {
         string query = fmt::format(QUERY_GET_EVENT_BY_ID, request.eventId);
         MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row = mysql_fetch_row(res_set);
@@ -156,29 +158,29 @@ public:
         return MESSAGE_SUCCESS;
     }
 
-    list<User*> getUsersNotJoinEvent(FreeUsersRequest &request) {
-         string query = fmt::format(QUERY_USERS_NOT_JOIN_EVENT, request.eventId);
-         MYSQL_RES* res_set = executeQuery(query);
-         MYSQL_ROW row;
+    list<User*> getUsersNotJoinEvent(FreeUsersRequest& request) {
+        string query = fmt::format(QUERY_USERS_NOT_JOIN_EVENT, request.eventId);
+        MYSQL_RES* res_set = executeQuery(query);
+        MYSQL_ROW row;
 
-         list<User*> result;
-         while (row = mysql_fetch_row(res_set)) {
-             int id = atoi(row[0]);
-             string name = row[1];
-             string credential = row[2];
-             result.emplace_back(new User(id, name, credential));
-         }
-         mysql_free_result(res_set);
-         return result;
-     }
+        list<User*> result;
+        while (row = mysql_fetch_row(res_set)) {
+            int id = atoi(row[0]);
+            string name = row[1];
+            string credential = row[2];
+            result.emplace_back(new User(id, name, credential));
+        }
+        mysql_free_result(res_set);
+        return result;
+    }
 
     list<AppRequest*> getRequests(ListRequestRequest& request) {
         string query = fmt::format(QUERY_LIST_REQUEST, request.token);
-        MYSQL_RES *res_set = executeQuery(query);
+        MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row;
 
         list<AppRequest*> result;
-        while(row = mysql_fetch_row(res_set)) {
+        while (row = mysql_fetch_row(res_set)) {
             int id = atoi(row[0]);
             int type = atoi(row[1]);
             string event = row[2];
@@ -188,13 +190,13 @@ public:
         mysql_free_result(res_set);
         return result;
     }
-    
+
     string createAskRequest(CreateAskRequest& request) {
         string query = fmt::format(QUERY_CREATE_ASK_REQUEST, request.eventId, request.eventOwner, request.token);
         executeQuery(query);
         return MESSAGE_SUCCESS;
     }
-    
+
     string createInviteRequest(CreateInviteRequest& request) {
         list<string> insertRows;
         for (User* user : request.users) {

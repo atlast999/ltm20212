@@ -1,7 +1,6 @@
 // clientApp.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -39,7 +38,7 @@ bool initWinsock()
 * param: instance[OUT] - pointer to the socket created
 * return true if success, false otherwise
 */
-bool initTCPSocket(SOCKET *instance)
+bool initTCPSocket(SOCKET* instance)
 {
 	*instance = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (*instance == INVALID_SOCKET)
@@ -51,9 +50,9 @@ bool initTCPSocket(SOCKET *instance)
 	return 1;
 }
 
-int showFeaturesMenu(SOCKET &client);
+int showFeaturesMenu(SOCKET& client);
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 
 	// Validate arguments
@@ -96,7 +95,7 @@ int main(int argc, char *argv[])
 	serverAddr.sin_addr.S_un.S_addr = address.S_un.S_addr;
 
 	// send connection request to server (doing the handsakes)
-	if (connect(client, (sockaddr *)&serverAddr, sizeof(serverAddr)))
+	if (connect(client, (sockaddr*)&serverAddr, sizeof(serverAddr)))
 	{
 		printf("Error! Cannot connect server.");
 		cout << WSAGetLastError();
@@ -123,7 +122,7 @@ int main(int argc, char *argv[])
 *  buffer - request content to send to server
 * return response code
 */
-int startComunicatingWithServer(SOCKET &client, const char *buffer)
+int startComunicatingWithServer(SOCKET& client, const char* buffer)
 {
 	int ret, messageLen;
 	ret = send(client, buffer, strlen(buffer), 0);
@@ -134,7 +133,7 @@ int startComunicatingWithServer(SOCKET &client, const char *buffer)
 	}
 
 	// Receive response from server
-	char *response = new char[2];
+	char* response = new char[2];
 	ret = recv(client, response, 2, 0);
 	if (ret == SOCKET_ERROR)
 	{
@@ -151,7 +150,7 @@ int startComunicatingWithServer(SOCKET &client, const char *buffer)
 *  message[IN] - UI hint message
 * return input content
 */
-string getUserInput(const char *message)
+string getUserInput(const char* message)
 {
 	cout << message;
 	string input;
@@ -165,7 +164,7 @@ string getUserInput(const char *message)
 *  client[IN] - socket param to pass to startComunicatingWithServer function
 * return feature code
 */
-int showLoginFeature(SOCKET &client)
+int showLoginFeature(SOCKET& client)
 {
 	string input = getUserInput("Enter your username: ");
 	vector<string> requestParts = { CMD_IN, input };
@@ -181,7 +180,7 @@ int showLoginFeature(SOCKET &client)
 *  client[IN] - socket param to pass to startComunicatingWithServer function
 * return feature code
 */
-int showPostFeature(SOCKET &client)
+int showPostFeature(SOCKET& client)
 {
 	cout << "Leave your post empty to exit the posting feature." << endl;
 	while (1)
@@ -203,7 +202,7 @@ int showPostFeature(SOCKET &client)
 *  client[IN] - socket param to pass to startComunicatingWithServer function
 * return feature code
 */
-int justLogout(SOCKET &client)
+int justLogout(SOCKET& client)
 {
 	vector<string> requestParts = { CMD_OUT, "\r\n" };
 	string request = joinToString(requestParts);
@@ -217,7 +216,7 @@ int justLogout(SOCKET &client)
 *  client[IN] - socket param to pass to feature function
 * return feature code
 */
-int showFeaturesMenu(SOCKET &client)
+int showFeaturesMenu(SOCKET& client)
 {
 	cout << "Select a feature below:" << endl;
 	cout << "1. Login" << endl;
