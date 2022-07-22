@@ -5,8 +5,9 @@
 
 # Compliled executable 
 /a.out
-#VS Code
+#IDE
 /.vscode
+/.idea
 # User-specific files
 *.rsuser
 *.suo
