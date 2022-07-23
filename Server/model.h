@@ -17,7 +17,7 @@ using namespace rapidjson;
 using namespace std;
 
 /**
- * An Interface allows to convert model to json string and vice versa
+ * The interface allows to convert model to json string and vice versa
  * Every transferred data model needs to implement this
  */
 class Serializable
@@ -101,6 +101,12 @@ protected:
     }
 };
 
+/**
+ * The class represents basic attributes of every client's request
+ * Member:
+ *  operation: identifies which feature being requested
+ *  token: identifies which client doing the request
+ */
 class BaseRequest : public Serializable {
 public:
     int operation = -1;
@@ -127,6 +133,12 @@ public:
     }
 };
 
+/**
+ * The class represents basic attributes of every server's response
+ * Member:
+ *  code: identifies result of response
+ *  token: identifies coresponding message
+ */
 class BaseResponse : public Serializable {
 public:
     int code;
@@ -149,6 +161,9 @@ public:
     }
 };
 
+/**
+ * The class represents basic attributes of User data model
+ */
 class User : public Serializable {
 public:
     int id;
@@ -174,6 +189,9 @@ public:
     }
 };
 
+/**
+ * The class represents basic attributes of Event data model
+ */
 class Event : public Serializable {
 public:
     int id;
@@ -213,6 +231,9 @@ public:
     }
 };
 
+/**
+ * The class represents basic attributes of Request data model
+ */
 class AppRequest : public Serializable {
 public:
     int id;
@@ -242,6 +263,12 @@ public:
 };
 
 //OP_SIGN_UP 0
+/**
+ * The class represents attributes of SignUpRequest
+ * Member:
+ *  name: identifies user's name
+ *  credential: identifies user's password
+ */
 class SignUpRequest : public BaseRequest {
 public:
     string name;
@@ -267,6 +294,9 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of SignUpResponse
+ */
 class SignUpResponse : public BaseResponse {
 public:
     SignUpResponse() {}
@@ -274,11 +304,22 @@ public:
 };
 
 //OP_LOG_IN 1
+/**
+ * The class represents attributes of LogInRequest
+ * Member:
+ *  name: identifies user's name
+ *  credential: identifies user's password
+ */
 class LogInRequest : public SignUpRequest {
 public:
     LogInRequest() {}
     LogInRequest(string name, string credential) : SignUpRequest(OP_LOG_IN, name, credential) { }
 };
+/**
+ * The class represents attributes of LogInResponse
+ * Member:
+ *  token: identifies user who just loged in
+ */
 class LogInResponse : public BaseResponse {
 public:
     int token = -1;
@@ -298,6 +339,11 @@ public:
 };
 
 //OP_LIST_EVENT 2
+/**
+ * The class represents attributes of ListEventRequest
+ * Member:
+ *  isMine: identifies if user is requesting events of their own or not
+ */
 class ListEventRequest : public BaseRequest {
 public:
     int isMine = 1;
@@ -315,6 +361,11 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of ListEventResponse
+ * Member:
+ *  events: identifies the said list of events
+ */
 class ListEventResponse : public BaseResponse {
 public:
     list<Event*> events;
@@ -334,6 +385,11 @@ public:
 };
 
 //OP_DETAIL_EVENT 3
+/**
+ * The class represents attributes of ListEventRequest
+ * Member:
+ *  eventId: identifies which event to be taken detail
+ */
 class DetailEventRequest : public BaseRequest {
 public:
     int eventId;
@@ -352,6 +408,11 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of ListEventRequest
+ * Member:
+ *  event: identifies the said event
+ */
 class DetailEventResponse : public BaseResponse {
 public:
     Event* event;
@@ -376,6 +437,11 @@ public:
 };
 
 //OP_CREATE_EVENT 4
+/**
+ * The class represents attributes of CreateEventRequest
+ * Member:
+ *  event: identifies new event to be created
+ */
 class CreateEventRequest : public BaseRequest {
 public:
     Event* event;
@@ -399,6 +465,9 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of CreateEventResponse
+ */
 class CreateEventResponse : public BaseResponse {
 public:
     CreateEventResponse() {}
@@ -406,6 +475,12 @@ public:
 };
 
 //OP_USERS_NOT_JOINING_EVENT 5
+/**
+ * The class represents attributes of FreeUsersRequest
+ * Request a list of users who were not members of a specific event
+ * Member:
+ *  eventId: identifies the said event
+ */
 class FreeUsersRequest : public DetailEventRequest {
 public:
     FreeUsersRequest() {}
@@ -413,6 +488,12 @@ public:
         this->eventId = eventId;
     }
 };
+/**
+ * The class represents attributes of FreeUsersResponse
+ * Request a list of users who was not members of a specific event
+ * Member:
+ *  users: identifies the said list of users
+ */
 class FreeUsersResponse : public BaseResponse {
 public:
     list<User*> users;
@@ -432,11 +513,21 @@ public:
 };
 
 //OP_LIST_REQUEST 6
+/**
+ * The class represents attributes of ListRequestRequest
+ * Request a list of request belonging to current user
+ */
 class ListRequestRequest : public BaseRequest {
 public:
     ListRequestRequest() { }
     ListRequestRequest(int token) : BaseRequest(OP_LIST_REQUEST, token) {}
 };
+/**
+ * The class represents attributes of ListRequestResponse
+ * Request a list of users who was not members of a specific event
+ * Member:
+ *  requests: identifies the said list of requests
+ */
 class ListRequestResponse : public BaseResponse {
 public:
     list<AppRequest*> requests;
@@ -456,6 +547,13 @@ public:
 };
 
 //OP_CREATE_ASK_REQUEST 7
+/**
+ * The class represents attributes of CreateAskRequest
+ * Request to join a event
+ * Member:
+ *  eventId: identifies the said event
+ *  eventOwner: identifies owner of the said event
+ */
 class CreateAskRequest : public DetailEventRequest {
 public:
     int eventOwner;
@@ -473,6 +571,9 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of CreateAskResponse
+ */
 class CreateAskResponse : public BaseResponse {
 public:
     CreateAskResponse() {}
@@ -480,6 +581,13 @@ public:
 };
 
 //OP_CREATE_INVITE_REQUEST 8
+/**
+ * The class represents attributes of CreateInviteRequest
+ * Request to invite users to event
+ * Member:
+ *  eventId: identifies the said event
+ *  users: identifies list of users to be invited
+ */
 class CreateInviteRequest : public DetailEventRequest {
 public:
     list<User*> users;
@@ -497,6 +605,9 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of CreateInviteResponse
+ */
 class CreateInviteResponse : public BaseResponse {
 public:
     CreateInviteResponse() {}
@@ -504,6 +615,13 @@ public:
 };
 
 //OP_UPDATE_REQUEST 9
+/**
+ * The class represents attributes of UpdateRequest
+ * Request to accept or reject a request
+ * Member:
+ *  requestId: identifies the said request
+ *  status: identifies accept or reject action
+ */
 class UpdateRequest : public BaseRequest {
 public:
     int requestId;
@@ -525,6 +643,9 @@ public:
         return stringify();
     }
 };
+/**
+ * The class represents attributes of UpdateResponse
+ */
 class UpdateResponse : public BaseResponse {
 public:
     UpdateResponse() {}
