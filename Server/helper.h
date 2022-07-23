@@ -15,7 +15,7 @@ using namespace std;
 #define OP_READY_TO_SEND 1
 #define BUFFER_SIZE 20240
 /**
- * A class represents attributes associated with client socket
+ * The class represents attributes associated with client socket
  * Used as completionKey in IOCP related functions
  */
 class AppSession {
@@ -73,10 +73,12 @@ void removeSession(AppSession* session) {
 	delete session;
 	LeaveCriticalSection(&criticalSection);
 }
-
 HANDLE ioCompletionPort;
-class ServerSocket {
 
+/**
+ * A class represents attributes of server
+ */
+class ServerSocket {
 private:
 	SOCKET socket;
 	string ip;
@@ -135,6 +137,11 @@ private:
 		return 1;
 	}
 
+	/*
+	* Initialize global ioCompletionPort variable
+	* Create worker threads for handling IOCP events
+	* return true if success, false otherwise
+	*/
 	bool initIOCP() {
 		ioCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 		if (ioCompletionPort == NULL) {
@@ -161,6 +168,10 @@ public:
 	~ServerSocket() {
 		delete this->controller;
 	}
+	/*
+	* Start the server
+	* Create a worker threads for accepting new client connections
+	*/
 	bool start() {
 		InitializeCriticalSection(&criticalSection);
 		if (!initWinsock()) return 0;
@@ -175,6 +186,7 @@ public:
 		cout << "Server started at port: " << port << endl;
 
 		_beginthreadex(0, 0, ServerSocket::acceptThread, (void*)this->socket, 0, 0);
+		//Keep the server alive forever
 		while (true);
 		return 1;
 	}
@@ -194,6 +206,8 @@ public:
 			AppSession* session = new AppSession(client);
 			session->opCode = OP_READY_TO_RECEIVE;
 			addNewSession(session);
+			//associate client's socket to IOCP with client's session as the key
+			//so that we know which session operating when IOCP event notified
 			HANDLE associate = CreateIoCompletionPort((HANDLE)session->client, ioCompletionPort, (ULONG_PTR)session, 0);
 			if (associate == NULL) {
 				removeSession(session);
@@ -216,6 +230,7 @@ public:
 		AppSession* session = NULL;
 		DWORD pBytes = 0, pFlag = 0;
 		while (true) {
+			//overlapped parameter needs to be NONNULL so that session parameter could be assigned correctly
 			int ret = GetQueuedCompletionStatus(
 				ioCompletionPort,
 				&bytesTransferred,
@@ -231,8 +246,10 @@ public:
 			switch (session->opCode) {
 			case OP_READY_TO_RECEIVE:
 				session->sentBytes += bytesTransferred;
+				//In case WSASend did not send all the data
 				if (session->sentBytes < session->totalBytes) {
 					session->opCode = OP_READY_TO_RECEIVE;
+					//update wsabuf to the data that was not sent
 					session->wsaBuf->buf += bytesTransferred;
 					session->wsaBuf->len = session->totalBytes - session->sentBytes;
 					int ret = WSASend(
@@ -267,7 +284,9 @@ public:
 				break;
 			case OP_READY_TO_SEND:
 				session->opCode = OP_READY_TO_RECEIVE;
+				//process received data
 				string response = controller->handleRequest(string(session->buffer));
+				//prepare to send back response
 				strcpy_s(session->buffer, response.c_str());
 				session->sentBytes = 0;
 				session->totalBytes = response.size();
