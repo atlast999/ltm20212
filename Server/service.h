@@ -22,12 +22,24 @@ using namespace std;
 class AppService {
 private:
     MYSQL* connect;
-    //Remember to call mysql_free_result(res_set) after being done with res_set
+    /**
+     * Send the query to database server
+     * Params:
+     *  query [IN]: the said query
+     * return the pointer to result of query
+     * Remember to call mysql_free_result(res_set) after being done with res_set
+     */
     MYSQL_RES* executeQuery(string query) {
         mysql_query(connect, query.c_str());
         return mysql_use_result(connect);
     }
 
+    /**
+     * Find a user by their name
+     * Params:
+     *  username [IN]: the said name
+     * return the pointer to found user
+     */
     User* findUserByName(string username) {
         string query = fmt::format(QUERY_FIND_USER_BY_NAME, username);
         MYSQL_RES* res_set = executeQuery(query);
@@ -40,6 +52,12 @@ private:
         return new User(id, name, credential);
     }
 
+    /**
+     * Find a user by their id
+     * Params:
+     *  userId [IN]: the said id
+     * return the pointer to found user
+     */
     User* findUserById(int userId) {
         string query = fmt::format(QUERY_FIND_USER_BY_ID, userId);
         MYSQL_RES* res_set = executeQuery(query);
@@ -53,12 +71,26 @@ private:
         return new User(id, name, credential);
     }
 
+    /**
+     * Create membership between event and user
+     * Params:
+     *  userId [IN]: the said event
+     *  userId [IN]: the said user
+     * return true if success, false otherwise
+     */
     bool createMembership(int eventId, int userId) {
         string query = fmt::format(QUERY_CREATE_MEMBERSHIP, eventId, userId);
         executeQuery(query);
         return TRUE;
     }
 
+    /**
+     * Concatenate list of strings into one, separated a delimeter
+     * Params:
+     *  tokens [IN]: the said list
+     *  del [IN]: the said delimeter
+     * return the concatenated string
+     */
     string joinToString(list<string> tokens, string del = " ")
     {
         ostringstream stream;
@@ -72,24 +104,24 @@ private:
     }
 
 public:
+    /**
+     * Establish a database connection when instanciate a service
+     */
     AppService() {
         connect = mysql_init(NULL);
         connect = mysql_real_connect(connect, SERVER, USER, PASSWORD, DATABASE, PORT, NULL, 0);
-        // if (connect) // check if the connection was successful,
-        // {
-        //     cout << "Connection Succeeded\n";
-        // }
-        // else
-        // {
-        //     cout << "Connection Failed\n";
-        //     return 0;
-        // }
     }
     ~AppService() {
         mysql_close(connect);
         delete connect;
     }
 
+    /**
+     * Create a new user
+     * Params:
+     *  request [IN]: see detail at model/SignUpRequest
+     * return the result message
+     */
     string createNewUser(SignUpRequest& request) {
         User* user = findUserByName(request.name);
         if (user != NULL) {
@@ -100,6 +132,12 @@ public:
         return MESSAGE_SUCCESS;
     }
 
+    /**
+     * Verify a user trying to log in
+     * Params:
+     *  request [IN]: see detail at model/LogInRequest
+     * return the result message
+     */
     string verifyUser(LogInRequest& request, int& token) {
         User* user = findUserByName(request.name);
         if (user == NULL) {
@@ -112,6 +150,12 @@ public:
         return MESSAGE_SUCCESS;
     }
 
+    /**
+     * Get a list of events
+     * Params:
+     *  request [IN]: see detail at model/ListEventRequest
+     * return the said list
+     */
     list<Event*> getEvents(ListEventRequest& request) {
         string query;
         if (request.isMine) {
@@ -137,6 +181,12 @@ public:
         return result;
     }
 
+    /**
+     * Get the detail of a event
+     * Params:
+     *  request [IN]: see detail at model/DetailEventRequest
+     * return the said event
+     */
     Event* getEventDetail(DetailEventRequest& request) {
         string query = fmt::format(QUERY_GET_EVENT_BY_ID, request.eventId);
         MYSQL_RES* res_set = executeQuery(query);
@@ -152,6 +202,12 @@ public:
         return new Event(id, name, description, time, location, owner);
     }
 
+    /**
+     * Create a new event
+     * Params:
+     *  request [IN]: see detail at model/CreateEventRequest
+     * return the result message
+     */
     string createEvent(CreateEventRequest& request) {
         Event* event = request.event;
         string addEventQuery = fmt::format(QUERY_CREATE_EVENT, event->name, event->description, event->time, event->location, event->owner);
@@ -161,6 +217,12 @@ public:
         return MESSAGE_SUCCESS;
     }
 
+    /**
+     * Get a list of users who were not members of a specific event
+     * Params:
+     *  request [IN]: see detail at model/FreeUsersRequest
+     * return the said list
+     */
     list<User*> getUsersNotJoinEvent(FreeUsersRequest& request) {
         string query = fmt::format(QUERY_USERS_NOT_JOIN_EVENT, request.eventId);
         MYSQL_RES* res_set = executeQuery(query);
@@ -177,6 +239,12 @@ public:
         return result;
     }
 
+    /**
+     * Get a list of requests belonging to current user
+     * Params:
+     *  request [IN]: see detail at model/ListRequestRequest
+     * return the said list
+     */
     list<AppRequest*> getRequests(ListRequestRequest& request) {
         string query = fmt::format(QUERY_LIST_REQUEST, request.token);
         MYSQL_RES* res_set = executeQuery(query);
@@ -194,12 +262,24 @@ public:
         return result;
     }
 
+    /**
+     * Create a ask-to-join request
+     * Params:
+     *  request [IN]: see detail at model/CreateAskRequest
+     * return the result message
+     */
     string createAskRequest(CreateAskRequest& request) {
         string query = fmt::format(QUERY_CREATE_ASK_REQUEST, request.eventId, request.eventOwner, request.token);
         executeQuery(query);
         return MESSAGE_SUCCESS;
     }
 
+    /**
+     * Create a invite-to-join request
+     * Params:
+     *  request [IN]: see detail at model/CreateInviteRequest
+     * return the result message
+     */
     string createInviteRequest(CreateInviteRequest& request) {
         list<string> insertRows;
         for (User* user : request.users) {
@@ -211,6 +291,12 @@ public:
         return MESSAGE_SUCCESS;
     }
 
+    /**
+     * Accept or reject a request
+     * Params:
+     *  request [IN]: see detail at model/UpdateRequest
+     * return the result message
+     */
     string updateRequest(UpdateRequest& request) {
         string updateQuery = fmt::format(QUERY_UPDATE_REQUEST, request.status, request.requestId);
         MYSQL_RES* res_set = executeQuery(updateQuery);
