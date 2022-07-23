@@ -347,18 +347,18 @@ public:
  */
 class ListEventRequest : public BaseRequest {
 public:
-    int isMine = 1;
+    int type = 1;
     ListEventRequest() {}
-    ListEventRequest(int isMine, int token) : BaseRequest(OP_LIST_EVENT, token) {
-        this->isMine = isMine;
+    ListEventRequest(int type, int token) : BaseRequest(OP_LIST_EVENT, token) {
+        this->type = type;
     }
     void deserialize(string raw) {
         BaseRequest::deserialize(raw);
-        this->isMine = getByKey(KEY_MINE).GetInt();
+        this->type = getByKey(KEY_EVENT_TYPE).GetInt();
     }
     string serialize() {
         BaseRequest::serialize();
-        addInt(KEY_MINE, this->isMine);
+        addInt(KEY_EVENT_TYPE, this->type);
         return stringify();
     }
 };

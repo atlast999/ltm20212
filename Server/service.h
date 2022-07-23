@@ -158,11 +158,14 @@ public:
      */
     list<Event*> getEvents(ListEventRequest& request) {
         string query;
-        if (request.isMine) {
-            query = fmt::format(QUERY_LIST_EVENT_MINE, request.token);
+        if (request.type == OTHER_EVENTS) {
+            query = fmt::format(QUERY_LIST_OTHER_EVENTS, request.token);
+        }
+        else if (request.type == JOINED_EVENTS) {
+            query = fmt::format(QUERY_LIST_JOINED_EVENTS);
         }
         else {
-            query = fmt::format(QUERY_LIST_EVENT);
+            query = fmt::format(QUERY_LIST_MY_EVENTS);
         }
         MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row;
