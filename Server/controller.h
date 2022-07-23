@@ -13,6 +13,12 @@ class AppController {
 private:
 	AppService service;
 
+    /**
+     * Create a new user
+     * Params:
+     *  rawRequest [IN]: the string represents SignUpRequest
+     * return the string represents response data
+     */
 	string createNewUser(string rawRequest) {
 		SignUpRequest request;
 		request.deserialize(rawRequest);
@@ -25,6 +31,12 @@ private:
 		return response.serialize();
 	}
 
+    /**
+     * Verify a user trying to log in
+     * Params:
+     *  rawRequest [IN]: the string represents LogInRequest
+     * return the string represents response data
+     */
 	string verifyUser(string rawRequest) {
 		LogInRequest request;
 		request.deserialize(rawRequest);
@@ -38,6 +50,12 @@ private:
 		return response.serialize();
 	}
 
+    /**
+     * Get a list of events
+     * Params:
+     *  rawRequest [IN]: the string represents ListEventRequest
+     * return the string represents response data
+     */
 	string getEvents(string rawRequest) {
 		ListEventRequest request;
 		request.deserialize(rawRequest);
@@ -45,6 +63,12 @@ private:
 		return ListEventResponse(CODE_SUCCESS, MESSAGE_SUCCESS, events).serialize();
 	}
 
+    /**
+     * Get the detail of a event
+     * Params:
+     *  rawRequest [IN]: the string represents DetailEventRequest
+     * return the string represents response data
+     */
 	string getEventDetail(string rawRequest) {
 		DetailEventRequest request;
 		request.deserialize(rawRequest);
@@ -55,6 +79,12 @@ private:
 		return DetailEventResponse(CODE_SUCCESS, MESSAGE_SUCCESS, event).serialize();
 	}
 
+    /**
+     * Create a new event
+     * Params:
+     *  rawRequest [IN]: the string represents CreateEventRequest
+     * return the string represents response data
+     */
 	string createEvent(string rawRequest) {
 		CreateEventRequest request;
 		request.deserialize(rawRequest);
@@ -67,6 +97,12 @@ private:
 		return response.serialize();
 	}
 
+    /**
+     * Get a list of users who were not members of a specific event
+     * Params:
+     *  rawRequest [IN]: the string represents FreeUsersRequest
+     * return the string represents response data
+     */
 	string getUsersNotJoinEvent(string rawRequest) {
 		FreeUsersRequest request;
 		request.deserialize(rawRequest);
@@ -74,6 +110,12 @@ private:
 		return FreeUsersResponse(CODE_SUCCESS, MESSAGE_SUCCESS, users).serialize();
 	}
 
+    /**
+     * Get a list of requests belonging to current user
+     * Params:
+     *  rawRequest [IN]: the string represents ListRequestRequest
+     * return the string represents response data
+     */
 	string getRequests(string rawRequest) {
 		ListRequestRequest request;
 		request.deserialize(rawRequest);
@@ -81,6 +123,12 @@ private:
 		return ListRequestResponse(CODE_SUCCESS, MESSAGE_SUCCESS, requests).serialize();
 	}
 
+    /**
+     * Create a ask-to-join request
+     * Params:
+     *  rawRequest [IN]: the string represents CreateAskRequest
+     * return the string represents response data
+     */
 	string createAskRequest(string rawRequest) {
 		CreateAskRequest request;
 		request.deserialize(rawRequest);
@@ -93,6 +141,12 @@ private:
 		return response.serialize();
 	}
 
+    /**
+     * Create a invite-to-join request
+     * Params:
+     *  rawRequest [IN]: the string represents CreateInviteRequest
+     * return the string represents response data
+     */
 	string createInviteRequest(string rawRequest) {
 		CreateInviteRequest request;
 		request.deserialize(rawRequest);
@@ -105,6 +159,12 @@ private:
 		return response.serialize();
 	}
 
+    /**
+     * Accept or reject a request
+     * Params:
+     *  rawRequest [IN]: the string represents UpdateRequest
+     * return the string represents response data
+     */
 	string updateRequest(string rawRequest) {
 		UpdateRequest request;
 		request.deserialize(rawRequest);
@@ -118,6 +178,12 @@ private:
 	}
 
 public:
+    /**
+     * Identify the request' operation then call the coresponding function
+     * Params:
+     *  rawRequest [IN]: the string represents client request
+     * return the string represents response data
+     */
 	string handleRequest(string rawRequest) {
 		BaseRequest request;
 		request.deserialize(rawRequest);
