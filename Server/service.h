@@ -162,10 +162,10 @@ public:
             query = fmt::format(QUERY_LIST_OTHER_EVENTS, request.token);
         }
         else if (request.type == JOINED_EVENTS) {
-            query = fmt::format(QUERY_LIST_JOINED_EVENTS);
+            query = fmt::format(QUERY_LIST_JOINED_EVENTS, request.token);
         }
         else {
-            query = fmt::format(QUERY_LIST_MY_EVENTS);
+            query = fmt::format(QUERY_LIST_MY_EVENTS, request.token);
         }
         MYSQL_RES* res_set = executeQuery(query);
         MYSQL_ROW row;
