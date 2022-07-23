@@ -89,8 +89,9 @@ protected:
     }
     void addObject(const char* key, Serializable& value) {
         string raw = value.serialize();
-        Document object;
-        object.Parse(raw.c_str());
+        Document objectDoc;
+        objectDoc.Parse(raw.c_str());
+        Value object(objectDoc, document.GetAllocator());
         document.AddMember(StringRef(key), object, document.GetAllocator());
     }
     string stringify() {
