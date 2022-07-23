@@ -21,6 +21,14 @@
 
 using namespace std;
 
+int token = -1;
+
+void showMyEvents(SOCKET& client);
+void showOtherEvents(SOCKET& client);
+void showDetailEventById(SOCKET& client, int choose);
+int showListEventMenu(SOCKET& client);
+
+
 /*
 * Initialize for using Winsock
 * return true if success, else otherwise
@@ -137,8 +145,8 @@ string startComunicatingWithServer(SOCKET& client, const char* buffer)
 	}
 
 	// Receive response from server
-	char* response = new char[2];
-	ret = recv(client, response, 2, 0);
+	char* response = new char[20240];
+	ret = recv(client, response, 20240, 0);
 	if (ret == SOCKET_ERROR)
 	{
 		printf("Cannot recieve from server: %d", WSAGetLastError());
@@ -168,21 +176,30 @@ string getUserInput(const char* message)
 *  client[IN] - socket param to pass to startComunicatingWithServer function
 * return feature code
 */
-string showRegisterFeature(SOCKET& client)
+void showRegisterFeature(SOCKET& client)
 {
-	string username = getUserInput("Enter your username: ");
-	string password = getUserInput("Enter your password: ");
-
-	SignUpRequest request(username, password);
-	string rawRequest = request.serialize();
-	string response = startComunicatingWithServer(client, rawRequest.c_str());
-	SignUpResponse signUpResponse;
-	signUpResponse.deserialize(response);
-	if(signUpResponse.message == MESSAGE_NAME_INVALID){
-		return MESSAGE_NAME_INVALID;
-	} else if (signUpResponse.message == MESSAGE_SUCCESS)
+	if (token > 0) {
+		cout << "--- You are logged in" << endl;
+	}
+	else
 	{
-		return MESSAGE_SUCCESS;
+		string username = getUserInput("Enter your username: ");
+		string password = getUserInput("Enter your password: ");
+
+		SignUpRequest request(username, password);
+		string rawRequest = request.serialize();
+		cout << rawRequest << endl;
+		string response = startComunicatingWithServer(client, rawRequest.c_str());
+		cout << response << endl;
+		SignUpResponse signUpResponse;
+		signUpResponse.deserialize(response);
+		if (signUpResponse.code == CODE_ERROR) {
+			cout << "--- " + signUpResponse.message << endl;
+		}
+		else if (signUpResponse.code == CODE_SUCCESS)
+		{
+			cout << "--- You are register sucess" << endl;
+		}
 	}
 }
 
@@ -192,26 +209,30 @@ string showRegisterFeature(SOCKET& client)
 *  client[IN] - socket param to pass to startComunicatingWithServer function
 * return feature code
 */
-string showLoginFeature(SOCKET& client)
+void showLoginFeature(SOCKET& client)
 {
-	string username = getUserInput("Enter your username: ");
-	string password = getUserInput("Enter your password: ");
-	
-	LogInRequest request(username, password);
-	string rawRequest = request.serialize();
-	string response = startComunicatingWithServer(client, rawRequest.c_str());
-	LogInResponse logInResponse;
-	logInResponse.deserialize(response);
-	if(logInResponse.message == MESSAGE_NAME_INVALID){
-		return MESSAGE_NAME_INVALID;
-	} else if (logInResponse.message == MESSAGE_CREDENTIAL_INVALID)
+	if (token > 0)
 	{
-		return MESSAGE_CREDENTIAL_INVALID;
-	} else if (logInResponse.message == MESSAGE_SUCCESS)
-	{
-		return MESSAGE_SUCCESS;
+		cout << "--- You are logged in" << endl;
 	}
-	
+	else {
+		string username = getUserInput("Enter your username: ");
+		string password = getUserInput("Enter your password: ");
+
+		LogInRequest request(username, password);
+		string rawRequest = request.serialize();
+		string response = startComunicatingWithServer(client, rawRequest.c_str());
+		LogInResponse logInResponse;
+		logInResponse.deserialize(response);
+		token = logInResponse.token;
+		if (logInResponse.code == CODE_ERROR) {
+			cout << "--- Incorrect account or password" << endl;
+		}
+		else if (logInResponse.code == CODE_SUCCESS)
+		{
+			cout << "--- Successful login" << endl;
+		}
+	}
 }
 
 
@@ -224,16 +245,160 @@ string showLoginFeature(SOCKET& client)
 */
 int showListEvent(SOCKET& client)
 {
-	cout << "All events" << endl;
-	ListEventRequest listEventRequest;
+	if (token < 0) {
+		cout << "--- You are not logged in" << endl;
+	}
+	else
+	{
+		cout << "Show events" << endl;
+		ListEventRequest listEventRequest(0, token);
+		string rawRequest = listEventRequest.serialize();
+		cout << rawRequest << endl;
+		string response = startComunicatingWithServer(client, rawRequest.c_str());
+		cout << response << endl;
+		ListEventResponse listEventResponse;
+		listEventResponse.deserialize(response);
+		list<Event*> events = listEventResponse.events;
+		for (Event* event : events)
+			cout << to_string(event->id) +"-"+ event->name << endl;
+		showListEventMenu(client);
+	}
+	return 3;
+}
+
+int showListEventMenu(SOCKET& client) {
+	cout << "Select a option to show events:" << endl;
+	cout << "1. My events" << endl;
+	cout << "2. Other events" << endl;
+	cout << "3. Back" << endl;
+	string option;
+	getline(cin, option);
+	switch (atoi(option.c_str()))
+	{
+	case 1:
+		showMyEvents(client);
+		return 1;
+		break;
+	case 2:
+		showOtherEvents(client);
+		return 2;
+		break;
+	case 3:
+		showFeaturesMenu(client);
+		break;
+	default:
+		cout << "\nThis option is not available." << endl;
+		return -1;
+	}
+}
+
+void showMyEvents(SOCKET& client) {
+	cout << "List my events" << endl;
+	ListEventRequest listEventRequest(1, token);
 	string rawRequest = listEventRequest.serialize();
+	cout << rawRequest << endl;
 	string response = startComunicatingWithServer(client, rawRequest.c_str());
+	cout << response << endl;
 	ListEventResponse listEventResponse;
 	listEventResponse.deserialize(response);
 	list<Event*> events = listEventResponse.events;
 	for (Event* event : events)
-		cout << event->id << endl;
-	return 3;
+		cout << to_string(event->id) + "-" + event->name << endl;
+	cout << "select event id to view event details" << endl;
+	cout << "0. Back" << endl;
+	string option;
+	getline(cin, option);
+	int choose = atoi(option.c_str());
+	if (choose == 0) {
+		showListEventMenu(client);
+	}
+	else
+	{
+		showDetailEventById(client, choose);
+	}
+}
+
+void showListUserInvite(SOCKET& client, int choose) {
+	cout << "List user not joined yet" << endl;
+	FreeUsersRequest freeUsersRequest(choose, token);
+	string rawRequest = freeUsersRequest.serialize();
+	string response = startComunicatingWithServer(client, rawRequest.c_str());
+	FreeUsersResponse freeUsersResponse;
+	freeUsersResponse.deserialize(response);
+	if (freeUsersResponse.code == CODE_ERROR) {
+		cout << freeUsersResponse.message << endl;
+		showDetailEventById(client, choose);
+	}
+	else if (freeUsersResponse.code == CODE_SUCCESS)
+	{
+		cout << freeUsersResponse.message << endl;
+		list<User*> users = freeUsersResponse.users;
+		for (User* user : users)
+			cout << to_string(user->id) + "-" + user->name << endl;
+		cout << "choose the id of the user you want to invite" << endl;
+		string op;
+		getline(cin, op);
+		int ch = atoi(op.c_str());
+		//CreateInviteRequest createInviteRequest(ch, );
+	}
+}
+
+void showOtherEvents(SOCKET& client) {
+	cout << "List my events" << endl;
+	ListEventRequest listEventRequest(0, token);
+	string rawRequest = listEventRequest.serialize();
+	cout << rawRequest << endl;
+	string response = startComunicatingWithServer(client, rawRequest.c_str());
+	cout << response << endl;
+	ListEventResponse listEventResponse;
+	listEventResponse.deserialize(response);
+	list<Event*> events = listEventResponse.events;
+	for (Event* event : events)
+		cout << to_string(event->id) + "-" + event->name << endl;
+	cout << "select event id to view event details" << endl;
+	cout << "0. Back" << endl;
+	string option;
+	getline(cin, option);
+	int choose = atoi(option.c_str());
+	if (choose == 0) {
+		showListEventMenu(client);
+	}
+	else
+	{
+		showDetailEventById(client, choose);
+	}
+}
+
+void showDetailEventById(SOCKET& client, int choose) {
+	cout << "Event " + choose << endl;
+	DetailEventRequest detailEventRequest(choose, token);
+	string rawRequest = detailEventRequest.serialize();
+	cout << rawRequest << endl;
+	string response = startComunicatingWithServer(client, rawRequest.c_str());
+	cout << response << endl;
+	DetailEventResponse detailEventResponse;
+	detailEventResponse.deserialize(response);
+	if (detailEventResponse.code == CODE_ERROR) {
+		cout << detailEventResponse.message << endl;
+		showListEventMenu(client);
+	}
+	else if (detailEventResponse.code == CODE_SUCCESS)
+	{
+		cout << detailEventResponse.message << endl;
+		cout << "id: " + detailEventResponse.event->id << endl;
+		cout << "name: " + detailEventResponse.event->name << endl;
+		cout << "description: " + detailEventResponse.event->description << endl;
+		cout << "time: " + detailEventResponse.event->time << endl;
+		cout << "location: " + detailEventResponse.event->location << endl;
+		cout << "owner: " + detailEventResponse.event->owner << endl;
+
+		cout << "choose s to invite people join group" << endl;
+		string opt;
+		getline(cin, opt);
+		if (opt == "s") {
+			showListUserInvite(client, detailEventResponse.event->id);
+		}
+	}
 }
 
 void showlistEvent(list<Event*> events)
@@ -269,27 +434,18 @@ int showFeaturesMenu(SOCKET& client)
 	cout << "2. Login" << endl;
 	cout << "3. List Event" << endl;
 	cout << "4. List Request" << endl;
-	cout << "5. Logout";
+	cout << "5. Create Event" << endl;
+	cout << "6. Logout" << endl;
 	string option;
 	getline(cin, option);
 	switch (atoi(option.c_str()))
 	{
 	case 1:
-		if(showRegisterFeature(client) == MESSAGE_SUCCESS){
-			cout << "---------  You have successfully registered ----------" << endl;
-		} else if (showRegisterFeature(client) ==  MESSAGE_NAME_INVALID)
-		{
-			cout << "----- Your account already exists -----" << endl;
-		}
+		showRegisterFeature(client);
 		return 1;
 		break;
 	case 2:
-		if(showLoginFeature(client) == MESSAGE_SUCCESS){
-			cout << "--------- Successful login ----------" << endl;
-		} else if ((showLoginFeature(client) ==  MESSAGE_NAME_INVALID) || (showLoginFeature(client) ==  MESSAGE_CREDENTIAL_INVALID))
-		{
-			cout << "--------- Account or password is incorrect ----------" << endl;
-		}
+		showLoginFeature(client);
 		return 2;
 		break;
 	case 3:
@@ -297,6 +453,12 @@ int showFeaturesMenu(SOCKET& client)
 		break;
 	case 4:
 		return 4;
+		break;
+	case 5:
+		return 5;
+		break;
+	case 6:
+		return 6;
 		break;
 	default:
 		cout << "\nThis option is not available." << endl;
