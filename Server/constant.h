@@ -16,7 +16,7 @@
 #define KEY_TIME "time"
 #define KEY_LOCATION "location"
 #define KEY_OWNER "owner"
-#define KEY_MINE "isMine"
+#define KEY_EVENT_TYPE "type"
 #define KEY_STATUS "status"
 
 //Response codes
@@ -41,6 +41,11 @@
 #define OP_CREATE_ASK_REQUEST 7
 #define OP_CREATE_INVITE_REQUEST 8
 #define OP_UPDATE_REQUEST 9
+
+//LIST_EVENT_TYPE
+#define OTHER_EVENTS 0
+#define JOINED_EVENTS 1
+#define MY_EVENTS 2
 
 //App's request feature related
 #define REQUEST_TYPE_INVITE 1
@@ -71,11 +76,22 @@
     ('{}', '{}')
 )"
 
-#define QUERY_LIST_EVENT R"(
+#define QUERY_LIST_OTHER_EVENTS R"(
     SELECT * FROM events
+    WHERE events.id NOT IN (
+        SELECT memberships.eventId FROM memberships
+        WHERE memberships.userId = {}
+    )
 )"
 
-#define QUERY_LIST_EVENT_MINE R"(
+#define QUERY_LIST_JOINED_EVENTS R"(
+    SELECT * FROM events, memberships
+    WHERE 
+        memberships.userId = {} and
+        events.id = memberships.eventId
+)"
+
+#define QUERY_LIST_MY_EVENTS R"(
     SELECT * FROM events
     WHERE 
         events.owner = {}
