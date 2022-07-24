@@ -185,46 +185,52 @@ public:
      * return the string represents response data
      */
 	string handleRequest(string rawRequest) {
-		BaseRequest request;
-		request.deserialize(rawRequest);
-		if (!request.isAuthenticated()) {
-			return BaseResponse(CODE_ERROR, MESSAGE_UNAUTHENTICATED).serialize();
-		}
-		switch (request.operation)
+		try
 		{
-		case OP_SIGN_UP:
-			return createNewUser(rawRequest);
-			break;
-		case OP_LOG_IN:
-			return verifyUser(rawRequest);
-			break;
-		case OP_LIST_EVENT:
-			return getEvents(rawRequest);
-			break;
-		case OP_DETAIL_EVENT:
-			return getEventDetail(rawRequest);
-			break;
-		case OP_CREATE_EVENT:
-			return createEvent(rawRequest);
-			break;
-		case OP_LIST_REQUEST:
-			return getRequests(rawRequest);
-			break;
-		case OP_USERS_NOT_JOINING_EVENT:
-			return getUsersNotJoinEvent(rawRequest);
-			break;
-		case OP_CREATE_ASK_REQUEST:
-			return createAskRequest(rawRequest);
-			break;
-		case OP_CREATE_INVITE_REQUEST:
-			return createInviteRequest(rawRequest);
-			break;
-		case OP_UPDATE_REQUEST:
-			return updateRequest(rawRequest);
-			break;
-		default:
-			return BaseResponse(CODE_ERROR, MESSAGE_INVALID_OPERATION).serialize();
-			break;
+			BaseRequest request;
+			request.deserialize(rawRequest);
+			if (!request.isAuthenticated())
+			{
+				return BaseResponse(CODE_ERROR, MESSAGE_UNAUTHENTICATED).serialize();
+			}
+			switch (request.operation)
+			{
+			case OP_SIGN_UP:
+				return createNewUser(rawRequest);
+				break;
+			case OP_LOG_IN:
+				return verifyUser(rawRequest);
+				break;
+			case OP_LIST_EVENT:
+				return getEvents(rawRequest);
+				break;
+			case OP_DETAIL_EVENT:
+				return getEventDetail(rawRequest);
+				break;
+			case OP_CREATE_EVENT:
+				return createEvent(rawRequest);
+				break;
+			case OP_LIST_REQUEST:
+				return getRequests(rawRequest);
+				break;
+			case OP_USERS_NOT_JOINING_EVENT:
+				return getUsersNotJoinEvent(rawRequest);
+				break;
+			case OP_CREATE_ASK_REQUEST:
+				return createAskRequest(rawRequest);
+				break;
+			case OP_CREATE_INVITE_REQUEST:
+				return createInviteRequest(rawRequest);
+				break;
+			case OP_UPDATE_REQUEST:
+				return updateRequest(rawRequest);
+				break;
+			default:
+				return BaseResponse(CODE_ERROR, MESSAGE_INVALID_OPERATION).serialize();
+				break;
+			}
+		} catch(...) {
+			return BaseResponse(CODE_ERROR, MESSAGE_ERROR_UNDEFINED).serialize();
 		}
 	}
 };
