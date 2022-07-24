@@ -179,7 +179,7 @@ string getUserInput(const char* message)
 void showRegisterFeature(SOCKET& client)
 {
 	if (token > 0) {
-		cout << "--- You are logged in" << endl;
+		cout << "--- You logged in" << endl;
 	}
 	else
 	{
@@ -198,7 +198,7 @@ void showRegisterFeature(SOCKET& client)
 		}
 		else if (signUpResponse.code == CODE_SUCCESS)
 		{
-			cout << "--- You are register sucess" << endl;
+			cout << "--- You registered sucessfully" << endl;
 		}
 	}
 }
@@ -269,7 +269,7 @@ int showListEvent(SOCKET& client)
 int showListEventMenu(SOCKET& client) {
 	cout << "Select a option to show events:" << endl;
 	cout << "1. My events" << endl;
-	cout << "2. Member events" << endl;
+	cout << "2. Joined events" << endl;
 	cout << "3. Other events" << endl;
 	cout << "4. Back" << endl;
 	string option;
@@ -461,8 +461,9 @@ void showDetailEventById(SOCKET& client, int choose, int status) {
 	}
 	else if (detailEventResponse.code == CODE_SUCCESS)
 	{
-		cout << detailEventResponse.message << endl;
-		cout << "id: " << detailEventResponse.event->id << endl;
+		//cout << detailEventResponse.message << endl;
+		cout << "---- Event Detail --- " << endl;
+		//cout << "id: " << detailEventResponse.event->id << endl;
 		cout << "name: " + detailEventResponse.event->name << endl;
 		cout << "description: " + detailEventResponse.event->description << endl;
 		cout << "time: " + detailEventResponse.event->time << endl;
@@ -558,24 +559,23 @@ void showListMyRequest(SOCKET& client, int userId) {
 	else if (listRequestResponse.code == CODE_SUCCESS)
 	{
 		cout << listRequestResponse.message << endl;
-		listRequestResponse.requests;
-		list<AppRequest*> appRequests;
 		int index = 1;
-		for (AppRequest* appRequest : appRequests) {
+		for (AppRequest* appRequest : listRequestResponse.requests) {
 			cout << to_string(index) + "-" << appRequest->name << endl;
 			index++;
 		}
 		cout << "select the request to handle by index" << endl;
-		cout << "0. Back";
+		cout << "0. Back" << endl;
 		string option;
 		getline(cin, option);
-		int requestId = atoi(option.c_str());
-		if (requestId == 0) {
+		if (atoi(option.c_str()) == 0) {
 			showFeaturesMenu(client);
+			return;
 		}
-		else {
-			requestProcessingMenu(client, requestId, userId);
-		}
+		list<AppRequest*>::iterator it = listRequestResponse.requests.begin();
+		advance(it, atoi(option.c_str())-1);
+		int requestId = (*it)->id;
+		requestProcessingMenu(client, requestId, userId);
 	}
 }
 
@@ -592,10 +592,10 @@ void requestProcessingMenu(SOCKET& client, int requestId, int userId) {
 		showListMyRequest(client, userId);
 	}
 	else if (functionId == 1) {
-		updateStatusRequest(client, requestId, 1, token);
+		updateStatusRequest(client, requestId, REQUEST_STATUS_ACCEPT, token);
 	}
 	else if (functionId == 2) {
-		updateStatusRequest(client, requestId, 0, token);
+		updateStatusRequest(client, requestId, REQUEST_STATUS_REJECT, token);
 	}
 	else {
 		cout << "input is incorrect. Requires re-entry" << endl;
@@ -685,8 +685,8 @@ int showFeaturesMenu(SOCKET& client)
 	cout << "Select a feature below:" << endl;
 	cout << "1. Register" << endl;
 	cout << "2. Login" << endl;
-	cout << "3. List Event" << endl;
-	cout << "4. List Request Join Event" << endl;
+	cout << "3. List Events" << endl;
+	cout << "4. My Requests " << endl;
 	cout << "5. Create Event" << endl;
 	cout << "6. Logout" << endl;
 	string option;
