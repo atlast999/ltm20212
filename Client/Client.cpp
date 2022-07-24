@@ -14,8 +14,7 @@
 #include "model.h";
 #include "constant.h";
 
-#define BUFFER_SIZE 2048
-#define gets_s(x, len) fgets((x), (len) + 1, stdin)
+#define BUFFER_SIZE 20240
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -25,9 +24,10 @@ int token = -1;
 
 void showMyEvents(SOCKET& client);
 void showOtherEvents(SOCKET& client);
-void showDetailEventById(SOCKET& client, int choose);
+void showDetailEventById(SOCKET& client, int choose, int status);
 int showListEventMenu(SOCKET& client);
-
+int showFeaturesMenu(SOCKET& client);
+void showMemberEvent(SOCKET& client);
 
 /*
 * Initialize for using Winsock
@@ -61,8 +61,6 @@ bool initTCPSocket(SOCKET* instance)
 	}
 	return 1;
 }
-
-int showFeaturesMenu(SOCKET& client);
 
 int main(int argc, char* argv[])
 {
@@ -109,7 +107,7 @@ int main(int argc, char* argv[])
 	// send connection request to server (doing the handsakes)
 	if (connect(client, (sockaddr*)&serverAddr, sizeof(serverAddr)))
 	{
-		printf("Error! Cannot connect server.");
+		cout << "Error! Cannot connect server." << endl;
 		cout << WSAGetLastError();
 		return 1;
 	}
@@ -145,8 +143,8 @@ string startComunicatingWithServer(SOCKET& client, const char* buffer)
 	}
 
 	// Receive response from server
-	char* response = new char[20240];
-	ret = recv(client, response, 20240, 0);
+	char* response = new char[BUFFER_SIZE];
+	ret = recv(client, response, BUFFER_SIZE, 0);
 	if (ret == SOCKET_ERROR)
 	{
 		printf("Cannot recieve from server: %d", WSAGetLastError());
@@ -269,8 +267,9 @@ int showListEvent(SOCKET& client)
 int showListEventMenu(SOCKET& client) {
 	cout << "Select a option to show events:" << endl;
 	cout << "1. My events" << endl;
-	cout << "2. Other events" << endl;
-	cout << "3. Back" << endl;
+	cout << "2. Member events" << endl;
+	cout << "3. Other events" << endl;
+	cout << "4. Back" << endl;
 	string option;
 	getline(cin, option);
 	switch (atoi(option.c_str()))
@@ -280,10 +279,13 @@ int showListEventMenu(SOCKET& client) {
 		return 1;
 		break;
 	case 2:
-		showOtherEvents(client);
+		showMemberEvent(client);
 		return 2;
 		break;
 	case 3:
+		showOtherEvents(client);
+		break;
+	case 4:
 		showFeaturesMenu(client);
 		break;
 	default:
@@ -292,9 +294,9 @@ int showListEventMenu(SOCKET& client) {
 	}
 }
 
-void showMyEvents(SOCKET& client) {
+void showMemberEvent(SOCKET& client) {
 	cout << "List my events" << endl;
-	ListEventRequest listEventRequest(1, token);
+	ListEventRequest listEventRequest(JOINED_EVENTS, token);
 	string rawRequest = listEventRequest.serialize();
 	cout << rawRequest << endl;
 	string response = startComunicatingWithServer(client, rawRequest.c_str());
@@ -314,7 +316,33 @@ void showMyEvents(SOCKET& client) {
 	}
 	else
 	{
-		showDetailEventById(client, choose);
+		showDetailEventById(client, choose, 1);
+	}
+}
+
+void showMyEvents(SOCKET& client) {
+	cout << "List my events" << endl;
+	ListEventRequest listEventRequest(MY_EVENTS, token);
+	string rawRequest = listEventRequest.serialize();
+	cout << rawRequest << endl;
+	string response = startComunicatingWithServer(client, rawRequest.c_str());
+	cout << response << endl;
+	ListEventResponse listEventResponse;
+	listEventResponse.deserialize(response);
+	list<Event*> events = listEventResponse.events;
+	for (Event* event : events)
+		cout << to_string(event->id) + "-" + event->name << endl;
+	cout << "select event id to view event details" << endl;
+	cout << "0. Back" << endl;
+	string option;
+	getline(cin, option);
+	int choose = atoi(option.c_str());
+	if (choose == 0) {
+		showListEventMenu(client);
+	}
+	else
+	{
+		showDetailEventById(client, choose, 2);
 	}
 }
 
@@ -327,25 +355,51 @@ void showListUserInvite(SOCKET& client, int choose) {
 	freeUsersResponse.deserialize(response);
 	if (freeUsersResponse.code == CODE_ERROR) {
 		cout << freeUsersResponse.message << endl;
-		showDetailEventById(client, choose);
+		showDetailEventById(client, choose, MY_EVENTS);
 	}
 	else if (freeUsersResponse.code == CODE_SUCCESS)
 	{
 		cout << freeUsersResponse.message << endl;
+		cout << "choose list index of the user you want to invite separated by commas" << endl;
 		list<User*> users = freeUsersResponse.users;
-		for (User* user : users)
-			cout << to_string(user->id) + "-" + user->name << endl;
-		cout << "choose the id of the user you want to invite" << endl;
+		int index = 1;
+		for (User* user : users){
+			cout << to_string(index) + "-" + user->name << endl;
+			index++;
+		}
+		list<User*>::iterator it = users.begin();
+
+		// get to user
 		string op;
 		getline(cin, op);
-		int ch = atoi(op.c_str());
-		//CreateInviteRequest createInviteRequest(ch, );
+		list<string> ids = tokenize(op, "," );
+
+		// create list of user to save
+		list<User*> usersRequest;
+		for (string id : ids) {
+			advance(it, atoi(id.c_str()));
+			usersRequest.emplace_back(*it);
+			it = users.begin();
+		}
+		CreateInviteRequest createInviteRequest(choose, usersRequest ,token);
+		string rawRequest = createInviteRequest.serialize();
+		string response = startComunicatingWithServer(client, rawRequest.c_str());
+		CreateInviteResponse createInviteResponse;
+		createInviteResponse.deserialize(response);
+		if (createInviteResponse.code == CODE_ERROR) {
+			cout << freeUsersResponse.message << endl;
+			showListUserInvite(client, choose);
+		}
+		else if (freeUsersResponse.code == CODE_SUCCESS) {
+			cout << freeUsersResponse.message << endl;
+			showListEventMenu(client);
+		}
 	}
 }
 
 void showOtherEvents(SOCKET& client) {
 	cout << "List my events" << endl;
-	ListEventRequest listEventRequest(0, token);
+	ListEventRequest listEventRequest(OTHER_EVENTS, token);
 	string rawRequest = listEventRequest.serialize();
 	cout << rawRequest << endl;
 	string response = startComunicatingWithServer(client, rawRequest.c_str());
@@ -365,11 +419,11 @@ void showOtherEvents(SOCKET& client) {
 	}
 	else
 	{
-		showDetailEventById(client, choose);
+		showDetailEventById(client, choose, 0);
 	}
 }
 
-void showDetailEventById(SOCKET& client, int choose) {
+void showDetailEventById(SOCKET& client, int choose, int status) {
 	cout << "Event " + choose << endl;
 	DetailEventRequest detailEventRequest(choose, token);
 	string rawRequest = detailEventRequest.serialize();
@@ -385,18 +439,51 @@ void showDetailEventById(SOCKET& client, int choose) {
 	else if (detailEventResponse.code == CODE_SUCCESS)
 	{
 		cout << detailEventResponse.message << endl;
-		cout << "id: " + detailEventResponse.event->id << endl;
+		cout << "id: " << detailEventResponse.event->id << endl;
 		cout << "name: " + detailEventResponse.event->name << endl;
 		cout << "description: " + detailEventResponse.event->description << endl;
 		cout << "time: " + detailEventResponse.event->time << endl;
 		cout << "location: " + detailEventResponse.event->location << endl;
-		cout << "owner: " + detailEventResponse.event->owner << endl;
+		cout << "owner: " << detailEventResponse.event->owner << endl;
 
-		cout << "choose s to invite people join group" << endl;
-		string opt;
-		getline(cin, opt);
-		if (opt == "s") {
-			showListUserInvite(client, detailEventResponse.event->id);
+		if (status == OTHER_EVENTS) {
+			cout << "choose r to request join group" << endl;
+			string opt;
+			getline(cin, opt);
+			if (opt == "r") {
+				CreateAskRequest createAskRequest(detailEventResponse.event->id, detailEventResponse.event->owner, token);
+				string rawRequest = createAskRequest.serialize();
+				string response = startComunicatingWithServer(client, rawRequest.c_str());
+				CreateAskResponse createAskResponse;
+				createAskResponse.deserialize(response);
+				if (createAskResponse.code == CODE_ERROR) {
+					cout << createAskResponse.message << endl;
+					showDetailEventById(client, detailEventResponse.event->id, 0);
+				}
+				else if (createAskResponse.code == CODE_SUCCESS)
+				{
+					cout << createAskResponse.message << endl;
+					showListEventMenu(client);
+				}
+			}
+		}
+		else if (status == JOINED_EVENTS)
+		{
+			cout << "0. Back" << endl;
+			string opt;
+			getline(cin, opt);
+			if (atoi(opt.c_str()) == 0) {
+				showMemberEvent(client);
+			}
+		}
+		else if (status == MY_EVENTS)
+		{
+			cout << "choose s to invite people join group" << endl;
+			string opt;
+			getline(cin, opt);
+			if (opt == "s") {
+				showListUserInvite(client, detailEventResponse.event->id);
+			}
 		}
 	}
 }

@@ -41,9 +41,9 @@ using namespace std;
 *  del[IN] - the delimiter
 * return a vector of separated strings
 */
-vector<string> tokenize(string s, string del = " ")
+list<string> tokenize(string s, string del = " ")
 {
-	vector<string> tokens;
+	list<string> tokens;
 	int start = 0;
 	int end = s.find(del);
 	while (end != -1)
