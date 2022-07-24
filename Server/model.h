@@ -330,6 +330,7 @@ public:
     }
     void deserialize(string raw) {
         BaseResponse::deserialize(raw);
+        if (this->code == CODE_ERROR) return;
         this->token = getByKey(KEY_TOKEN).GetInt();
     }
     string serialize() {
@@ -376,6 +377,7 @@ public:
     }
     void deserialize(string raw) {
         BaseResponse::deserialize(raw);
+        if (this->code == CODE_ERROR) return;
         getArrayByKey(KEY_DATA, this->events);
     }
     string serialize() {
@@ -428,6 +430,7 @@ public:
     }
     void deserialize(string raw) {
         BaseResponse::deserialize(raw);
+        if (this->code == CODE_ERROR) return;
         getObjectByKey(KEY_DATA, *(this->event));
     }
     string serialize() {
@@ -504,6 +507,7 @@ public:
     }
     void deserialize(string raw) {
         BaseResponse::deserialize(raw);
+        if (this->code == CODE_ERROR) return;
         getArrayByKey(KEY_DATA, this->users);
     }
     string serialize() {
@@ -538,6 +542,7 @@ public:
     }
     void deserialize(string raw) {
         BaseResponse::deserialize(raw);
+        if (this->code == CODE_ERROR) return;
         getArrayByKey(KEY_DATA, this->requests);
     }
     string serialize() {
@@ -597,11 +602,11 @@ public:
         this->users = users;
     }
     void deserialize(string raw) {
-        BaseRequest::deserialize(raw);
+        DetailEventRequest::deserialize(raw);
         getArrayByKey(KEY_DATA, this->users);
     }
     string serialize() {
-        BaseRequest::serialize();
+        DetailEventRequest::serialize();
         addArray(KEY_DATA, this->users);
         return stringify();
     }

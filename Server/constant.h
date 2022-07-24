@@ -27,8 +27,9 @@
 #define MESSAGE_UNAUTHENTICATED "Unauthenticated"
 #define MESSAGE_INVALID_OPERATION "Invalid Operation"
 #define MESSAGE_NAME_INVALID "Invalid Name"
-#define MESSAGE_CREDENTIAL_INVALID "Password Invalide"
+#define MESSAGE_CREDENTIAL_INVALID "Password Invalid"
 #define MESSAGE_EVENT_NOT_EXIST "Event is not exist"
+#define MESSAGE_ERROR_UNDEFINED "Something went wrong! Please try a gain!"
 
 //Request operations (App's usecases)
 #define OP_SIGN_UP 0
