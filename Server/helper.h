@@ -158,7 +158,8 @@ private:
 	}
 
 public:
-	ServerSocket() : ServerSocket("127.0.0.1", 8080) { }
+	ServerSocket() : ServerSocket(8080) { }
+	ServerSocket(int port) : ServerSocket("192.168.50.66", port) {}
 	ServerSocket(string ip, int port) {
 		this->ip = ip;
 		this->port = port;
